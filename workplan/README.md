@@ -1,0 +1,195 @@
+# payment-sync — Implementation Work Plan
+
+Sequential, milestone-based implementation plan derived from [`../architecture.md`](../architecture.md)
+and [`../plan.md`](../plan.md).
+
+**17 task files.** The brief suggested 10–15; 17 is the number where each file is one reviewable
+milestone with a single acceptance gate. Collapsing further (e.g. one "backend" task) would hide the
+money-critical gates — exact matching, webhook delivery, and heuristic matching each need their own
+green light before the next thing depends on them. Splitting further (e.g. admin auth apart from
+company management) produced files too small to be milestones.
+
+---
+
+## 1. Task index
+
+| # | Task | Track | Depends on | Est. |
+|---|---|---|---|---|
+| [01](./01-foundation-and-dev-environment.md) | Foundation & Developer Environment | Core | — | 2–3 d |
+| [02](./02-data-model-and-migrations.md) | Data Model & Migrations | Core | 01 | 3–4 d |
+| [03](./03-api-core-and-auth-primitives.md) | API Core & Auth Primitives | Core | 02 | 4–5 d |
+| [04](./04-control-plane.md) | Control Plane: Admin Identity, Companies, Credentials | Core | 03 | 4–5 d |
+| [05](./05-sms-parsing-subsystem.md) | SMS Parsing Subsystem | Core | 03 | 4–5 d |
+| [06](./06-device-api-and-sms-ingestion.md) | Device API & SMS Ingestion | Core | 04, 05 | 4–5 d |
+| [07](./07-client-payments-api.md) | Client Payments API | Core | 04 | 3–4 d |
+| [08](./08-matching-engine-exact.md) | Matching Engine — Exact Pass & Invariants | Core | 06, 07 | 4–5 d |
+| [09](./09-webhook-delivery.md) | Webhook Delivery Subsystem | Core | 08 | 4–5 d |
+| [10](./10-heuristic-matching-reviews-analytics.md) | Heuristic Matching, Review Queue & Analytics API | Core | 09 | 5–6 d |
+| [11](./11-admin-dashboard-control-plane.md) | Admin Dashboard I — Shell, Auth, Control Plane | Web | 04 (+03) | 4–5 d |
+| [12](./12-admin-dashboard-operations.md) | Admin Dashboard II — Operations Screens | Web | 10, 11 | 5–6 d |
+| [13](./13-android-foundation-and-capture.md) | Android I — Foundation, Consent, Enrollment, Capture | Android | 05, 06 | 5–7 d |
+| [14](./14-android-sync-engine.md) | Android II — Sync Engine, Manual Sync, Diagnostics | Android | 13 (+09) | 5–7 d |
+| [15](./15-android-hardening-and-release.md) | Android III — Hardening, Reliability & Release Channel | Android | 14 | 4–6 d |
+| [16](./16-observability-deployment-and-backups.md) | Observability, Deployment, CI/CD & Backups | Ops | 03 (thin slice), 10 (full) | 5–6 d |
+| [17](./17-client-enablement-and-go-live.md) | Client Enablement, Documentation & Go-Live | Release | 12, 15, 16 | 5–7 d |
+
+**Total ≈ 70–90 working days solo**, materially less with the tracks run in parallel (§3).
+
+---
+
+## 2. Dependency graph
+
+```mermaid
+flowchart TD
+    T01[01 Foundation] --> T02[02 Data Model]
+    T02 --> T03[03 API Core]
+    T03 --> T04[04 Control Plane]
+    T03 --> T05[05 SMS Parsing]
+    T04 --> T06[06 Device API]
+    T05 --> T06
+    T04 --> T07[07 Payments API]
+    T06 --> T08[08 Matching: exact]
+    T07 --> T08
+    T08 --> T09[09 Webhooks]
+    T09 --> T10[10 Heuristic + Reviews + Analytics]
+
+    T04 --> T11[11 Dashboard I]
+    T10 --> T12[12 Dashboard II]
+    T11 --> T12
+
+    T06 --> T13[13 Android I]
+    T05 --> T13
+    T13 --> T14[14 Android II]
+    T09 -.contract only.-> T14
+    T14 --> T15[15 Android III]
+
+    T03 -.thin slice early.-> T16[16 Observability + Deploy]
+    T10 --> T16
+
+    T12 --> T17[17 Enablement + Go-Live]
+    T15 --> T17
+    T16 --> T17
+
+    style T08 stroke-width:3px
+    style T09 stroke-width:3px
+    style T10 stroke-width:3px
+```
+
+Bold-bordered nodes are the **money-critical gates**: do not start dependent work until their
+acceptance criteria are fully green.
+
+---
+
+## 3. Parallelization
+
+Solo, follow the numeric order — it is already a valid topological sort. With help, three tracks run
+concurrently once Task 06 lands:
+
+| Track | Tasks | Can start after | Notes |
+|---|---|---|---|
+| **Core (backend)** | 01→10 | — | Critical path. Everything else waits on its contracts. |
+| **Web (dashboard)** | 11→12 | 04 for T11, 10 for T12 | T11 needs only control-plane endpoints; build against generated OpenAPI client. |
+| **Android** | 13→15 | 06 | T13/T14 develop against a **mock server generated from `docs/openapi.yaml`** plus the local dev stack. Only T14's webhook-visibility assertions need T09 deployed. |
+| **Ops** | 16 | 03 (thin slice) | See pull-forward note below. |
+
+**Pull-forward (strongly recommended):** implement the *thin slice* of Task 16 — production
+`docker-compose.yml`, Caddy, GitHub Actions build+deploy, staging environment — immediately after
+Task 03. Deploying an almost-empty API to staging on day 10 costs a day and removes the classic
+"everything works locally, nothing works on the VPS" week at the end. The rest of Task 16 (metrics,
+alerts, backups, invariant job) stays in phase order because it needs real signals to alert on.
+
+---
+
+## 4. Global conventions
+
+**Branching / PRs**
+- One branch per task: `task/NN-slug` (e.g. `task/08-matching-engine-exact`).
+- Sub-branches for large tasks: `task/NN-slug--subtopic`, squashed into the task branch.
+- PR title: `Task NN — <title>`; PR body pastes the task's acceptance criteria as a checklist.
+- Conventional commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`).
+
+**Migrations**
+- `pnpm --filter api prisma migrate dev --name <verb_object>` (snake_case, e.g. `add_match_attempts`).
+- Expand → migrate → contract. **Never** a destructive change in one release on a money table.
+- Every migration reviewed as SQL, not just as a schema diff.
+
+**Money & time (non-negotiable, enforced in review)**
+- Money is `NUMERIC(14,2)` in Postgres, integer paisa in comparisons, decimal **strings** on the
+  wire. No `number` arithmetic on amounts anywhere, ever.
+- Timestamps are `timestamptz` UTC in storage, ISO-8601 with offset on the wire, `Asia/Dhaka` only
+  at presentation. Containers run `TZ=UTC`.
+
+**Definition of Done — applies to every task in addition to its own criteria**
+1. `pnpm lint && pnpm typecheck && pnpm test` green (plus `./gradlew lint test` for Android tasks).
+2. New behaviour has tests at the right level; money-path behaviour has a failing-first test.
+3. `docs/openapi.yaml` regenerated and CI's breaking-change check passes (backend tasks).
+4. Docs updated: `architecture.md` if a decision changed, `docs/runbook.md` if ops behaviour changed,
+   `.env.example` if config changed.
+5. No `TODO`/`FIXME`/`any`/silent `catch` on the money path (ingest → parse → match → webhook).
+6. Secrets never logged; new log lines checked against the redaction list.
+7. The task's own "smoke demo" (each file names one) performed and recorded in the PR.
+
+**Test layers**
+| Layer | Tool | Where |
+|---|---|---|
+| Unit | Vitest | pure logic: parsers, scoring, money, signing |
+| Integration | Vitest + Testcontainers (PG 16 + Redis 7) | repositories, matching transactions, queues |
+| E2E API | Vitest + supertest + local webhook receiver | full journeys per `architecture.md §5` |
+| Contract | OpenAPI lint + `oasdiff` breaking check + reference webhook verifiers | CI |
+| Android unit | JUnit5 + Turbine | parser parity, state machine |
+| Android instrumented | AndroidX Test + WorkManager TestDriver + MockWebServer | capture, sync, Room migrations |
+| Load | k6 | Task 17 |
+
+---
+
+## 5. Progress tracker
+
+Update the status column in this table as part of each task's PR.
+
+| # | Task | Status | PR | Notes |
+|---|---|---|---|---|
+| 01 | Foundation & Dev Environment | ☐ Not started | | |
+| 02 | Data Model & Migrations | ☐ Not started | | |
+| 03 | API Core & Auth Primitives | ☐ Not started | | |
+| 04 | Control Plane | ☐ Not started | | |
+| 05 | SMS Parsing Subsystem | ☐ Not started | | |
+| 06 | Device API & SMS Ingestion | ☐ Not started | | |
+| 07 | Client Payments API | ☐ Not started | | |
+| 08 | Matching Engine — Exact | ☐ Not started | | |
+| 09 | Webhook Delivery | ☐ Not started | | |
+| 10 | Heuristic Matching & Reviews | ☐ Not started | | |
+| 11 | Admin Dashboard I | ☐ Not started | | |
+| 12 | Admin Dashboard II | ☐ Not started | | |
+| 13 | Android I | ☐ Not started | | |
+| 14 | Android II | ☐ Not started | | |
+| 15 | Android III | ☐ Not started | | |
+| 16 | Observability & Deployment | ☐ Not started | | |
+| 17 | Enablement & Go-Live | ☐ Not started | | |
+
+Legend: ☐ Not started · ◐ In progress · ☑ Done · ⚠ Blocked
+
+---
+
+## 6. Cross-cutting risk register
+
+| Risk | Owner task | Mitigation | Contingency |
+|---|---|---|---|
+| **No real SMS corpus** — parser rules are provisional (`architecture.md §20.2`) | 05 | Rules are versioned data + fixture-gated; re-parse tooling from day one | Pilot with one merchant, bump rule versions, bulk re-parse; unparsed messages are stored, never lost |
+| **OEM battery killers** silently stop capture | 14, 15 | Reconcile scan + Manual Sync + heartbeat offline alerting means correctness never depends on the broadcast | Foreground-service mode; document per-OEM autostart steps |
+| **Google Play blocks the SMS app** (`architecture.md §17.1`) | 15 | Direct signed-APK channel is the primary plan | Notification-listener capture adapter behind the same interface |
+| **False verification** (money loss for a client) | 08, 10 | DB-level double-UNIQUE invariants; review queue over guessing; adversarial fixture suite | Manual verify + audit trail; per-tenant `heuristic_enabled=false` kill switch |
+| **Client webhook endpoint unreliable** | 09 | 8-attempt backoff, DLQ, circuit breaker, poll-fallback endpoint | Bulk replay from dashboard |
+| **Scope creep from post-v1 list** | all | `plan.md §16` items are explicitly out of scope in every task file | Roadmap in `architecture.md §19` |
+
+---
+
+## 7. Secrets & config checklist (must exist before Task 16's staging deploy)
+
+`DATABASE_URL` · `REDIS_URL` · `KEY_ENCRYPTION_KEY` (32-byte base64) · `JWT_ACCESS_SECRET` ·
+`JWT_REFRESH_SECRET` · `ADMIN_ORIGIN` · `ADMIN_IP_ALLOWLIST` (optional) · `PUBLIC_API_URL` ·
+`WEBHOOK_USER_AGENT` · `SENTRY_DSN` · `ALERT_EMAIL` + SMTP creds · `TELEGRAM_BOT_TOKEN` +
+`TELEGRAM_CHAT_ID` · `BACKUP_S3_ENDPOINT/BUCKET/KEY/SECRET` · `BACKUP_ENCRYPTION_KEY` ·
+`ANDROID_KEYSTORE_BASE64` + `ANDROID_KEYSTORE_PASSWORD` + `ANDROID_KEY_ALIAS/PASSWORD` ·
+`LOG_LEVEL` · `TZ=UTC`.
+
+All documented in `infra/.env.example`; none committed.
