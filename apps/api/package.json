@@ -26,6 +26,7 @@
     "@nestjs/platform-express": "10.4.15",
     "@nestjs/swagger": "8.1.1",
     "@node-rs/argon2": "2.0.2",
+    "@paysync/parsers": "workspace:*",
     "@paysync/shared": "workspace:*",
     "@prisma/client": "6.2.1",
     "bullmq": "5.34.10",

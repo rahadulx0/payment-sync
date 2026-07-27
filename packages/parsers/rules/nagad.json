@@ -1,0 +1,25 @@
+{
+  "provider": "NAGAD",
+  "version": 1,
+  "sender_addresses": ["NAGAD", "Nagad", "16167"],
+  "message_types": [
+    {
+      "type": "CASH_OUT",
+      "direction": "DEBIT",
+      "must_contain": ["Cash Out"],
+      "must_not_contain": [],
+      "patterns": {},
+      "timestamp_formats": [],
+      "required": []
+    },
+    {
+      "type": "SEND_MONEY_SENT",
+      "direction": "DEBIT",
+      "must_contain": ["sent"],
+      "must_not_contain": [],
+      "patterns": {},
+      "timestamp_formats": [],
+      "required": []
+    }
+  ]
+}

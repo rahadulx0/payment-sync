@@ -1,0 +1,35 @@
+[
+  {
+    "id": "nagad-cash-out-debit-ignored",
+    "address": "NAGAD",
+    "body": "Cash Out Tk 1,000.00 successful. Balance Tk 200.00. TxnID N123456789 at 05/01/2026 12:00",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "NAGAD",
+      "messageType": "CASH_OUT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  },
+  {
+    "id": "nagad-credit-provisional-unparsed",
+    "address": "NAGAD",
+    "body": "You have received Tk 500.00. Balance Tk 700.00. TxnID N987654321 at 05/01/2026 12:05",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "NAGAD",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  }
+]

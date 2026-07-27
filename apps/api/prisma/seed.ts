@@ -5,8 +5,11 @@
 import { pathToFileURL } from 'node:url';
 
 import { hash } from '@node-rs/argon2';
+import { buildRulesBundle } from '@paysync/parsers';
 import { Provider } from '@paysync/shared';
-import { PrismaClient } from '@prisma/client';
+import { type Prisma, PrismaClient } from '@prisma/client';
+
+const RULE_BUNDLE = buildRulesBundle() as { provider: Provider; version: number }[];
 
 // @node-rs/argon2 defaults to Argon2id; keep the OWASP-ish cost params (architecture §13.2).
 const ARGON = { memoryCost: 19_456, timeCost: 2, parallelism: 1 };
@@ -51,10 +54,19 @@ export async function seed(prisma: PrismaClient, opts: SeedOptions): Promise<voi
       },
       create: { ...p, is_active: true },
     });
+  }
+
+  // Activate the versioned parser rules from packages/parsers (one active per provider).
+  for (const rule of RULE_BUNDLE) {
     await prisma.parserRule.upsert({
-      where: { provider_version: { provider: p.provider, version: 0 } },
-      update: {},
-      create: { provider: p.provider, version: 0, rule: {}, is_active: false },
+      where: { provider_version: { provider: rule.provider, version: rule.version } },
+      update: { rule: rule as unknown as Prisma.InputJsonValue, is_active: true },
+      create: {
+        provider: rule.provider,
+        version: rule.version,
+        rule: rule as unknown as Prisma.InputJsonValue,
+        is_active: true,
+      },
     });
   }
 

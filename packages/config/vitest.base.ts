@@ -10,7 +10,7 @@ type TestConfig = NonNullable<ViteUserConfig['test']>;
 export const coverageConfig: NonNullable<TestConfig['coverage']> = {
   provider: 'v8',
   include: ['packages/*/src/**/*.ts'],
-  exclude: ['**/index.ts', '**/dto/**', '**/*.d.ts', '**/types.ts'],
+  exclude: ['**/index.ts', '**/dto/**', '**/*.d.ts', '**/types.ts', '**/export-android.ts'],
   reporter: ['text', 'html'],
   thresholds: {
     lines: 70,

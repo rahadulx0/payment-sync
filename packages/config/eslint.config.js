@@ -88,8 +88,8 @@ export default tseslint.config(
     },
   },
   {
-    // Parsers get the amount bans plus purity bans.
-    files: ['packages/parsers/**/*.ts'],
+    // Parser SOURCE gets the amount bans plus purity bans (tests may inject `now` via new Date).
+    files: ['packages/parsers/src/**/*.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...amountBans, ...parserPurityBans],
     },

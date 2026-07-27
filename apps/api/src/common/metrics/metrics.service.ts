@@ -21,6 +21,12 @@ export class MetricsService {
     labelNames: ['provider'],
     registers: [this.registry],
   });
+  readonly parserHintMismatch = new Counter({
+    name: 'parser_hint_mismatch_total',
+    help: 'Device parse hint vs server parse mismatches',
+    labelNames: ['provider'],
+    registers: [this.registry],
+  });
   readonly matchDecisions = new Counter({
     name: 'match_decisions_total',
     help: 'Match decisions by result and pass',

@@ -454,6 +454,62 @@ paths:
         '201':
           description: ''
       tags: *a4
+  /admin/parser-rules:
+    get:
+      operationId: ParsingController_listRules
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: &a5
+        - admin-parsing
+  /admin/parser-rules/{id}/activate:
+    post:
+      operationId: ParsingController_activate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a5
+  /admin/parser-health:
+    get:
+      operationId: ParsingController_health
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a5
+  /admin/sms-logs/unparsed:
+    get:
+      operationId: ParsingController_unparsed
+      parameters:
+        - name: provider
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a5
+  /admin/sms-logs/{id}/reparse:
+    post:
+      operationId: ParsingController_reparse
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a5
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -461,7 +517,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a5
+      tags: &a6
         - Probe
   /probe/server:
     get:
@@ -470,7 +526,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a5
+      tags: *a6
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -478,7 +534,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a5
+      tags: *a6
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -486,7 +542,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a5
+      tags: *a6
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -494,7 +550,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a5
+      tags: *a6
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -502,7 +558,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a5
+      tags: *a6
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.

@@ -68,6 +68,9 @@ importers:
       '@node-rs/argon2':
         specifier: 2.0.2
         version: 2.0.2
+      '@paysync/parsers':
+        specifier: workspace:*
+        version: link:../../packages/parsers
       '@paysync/shared':
         specifier: workspace:*
         version: link:../../packages/shared

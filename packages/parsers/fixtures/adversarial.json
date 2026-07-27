@@ -1,0 +1,35 @@
+[
+  {
+    "id": "bkash-balance-inquiry-no-trxid-unparsed",
+    "address": "bKash",
+    "body": "Your bKash account balance is Tk 500.00. Thank you for using bKash.",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "BKASH",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "bkash-payment-out-of-scope-ignored",
+    "address": "bKash",
+    "body": "Your Payment of Tk 300.00 to Merchant XYZ is successful. Balance Tk 700.00. TrxID PZ12QW34ER at 05/01/2026 19:00",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "BKASH",
+      "messageType": "PAYMENT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  }
+]
