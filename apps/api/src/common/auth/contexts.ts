@@ -14,6 +14,7 @@ export interface DeviceContext {
 
 export interface AdminContext {
   adminId: string;
+  family?: string | undefined;
 }
 
 declare global {

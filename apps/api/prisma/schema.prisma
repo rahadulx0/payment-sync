@@ -204,6 +204,7 @@ model ApiKey {
   last_used_ip String?   @db.VarChar(64)
   expires_at   DateTime? @db.Timestamptz(3)
   revoked_at   DateTime? @db.Timestamptz(3)
+  revoke_at    DateTime? @db.Timestamptz(3)
   created_at   DateTime  @default(now()) @db.Timestamptz(3)
   updated_at   DateTime  @updatedAt @db.Timestamptz(3)
 
@@ -235,6 +236,9 @@ model Device {
   has_sms_permission      Boolean?
   network_type            String?      @db.VarChar(20)
   clock_skew_seconds      Int          @default(0)
+  force_sync_requested    Boolean      @default(false)
+  rotate_token_requested  Boolean      @default(false)
+  message_for_user        String?
   created_at              DateTime     @default(now()) @db.Timestamptz(3)
   updated_at              DateTime     @updatedAt @db.Timestamptz(3)
 

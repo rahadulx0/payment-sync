@@ -18,6 +18,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 interface AdminJwtPayload {
   sub: string;
   totp_verified?: boolean;
+  family?: string;
 }
 
 /**
@@ -181,7 +182,7 @@ export class AudienceGuard implements CanActivate {
     if (allowlist.length > 0 && (req.ip === undefined || !allowlist.includes(req.ip))) {
       throw new AppError('FORBIDDEN_SCOPE', 'Admin access is not allowed from this IP.');
     }
-    req.authAdmin = { adminId: payload.sub };
+    req.authAdmin = { adminId: payload.sub, family: payload.family };
     RequestContext.set({ adminId: payload.sub });
   }
 }

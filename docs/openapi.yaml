@@ -1,5 +1,459 @@
 openapi: 3.0.0
 paths:
+  /admin/audit-logs:
+    get:
+      operationId: AuditController_list
+      parameters:
+        - name: actor_type
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: action
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags:
+        - admin-audit
+  /admin/auth/login:
+    post:
+      operationId: AdminAuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '201':
+          description: ''
+      tags: &a1
+        - admin-auth
+  /admin/auth/2fa/enroll:
+    post:
+      operationId: AdminAuthController_enrol
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaTokenDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/auth/2fa/verify:
+    post:
+      operationId: AdminAuthController_verify
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpVerifyDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/auth/refresh:
+    post:
+      operationId: AdminAuthController_refresh
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/auth/sessions:
+    get:
+      operationId: AdminAuthController_sessionsList
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a1
+  /admin/auth/logout:
+    post:
+      operationId: AdminAuthController_logout
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/auth/logout-all:
+    post:
+      operationId: AdminAuthController_logoutAll
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/auth/password:
+    post:
+      operationId: AdminAuthController_changePassword
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a1
+  /admin/companies:
+    post:
+      operationId: CompaniesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyDto'
+      responses:
+        '201':
+          description: ''
+      tags: &a2
+        - admin-companies
+    get:
+      operationId: CompaniesController_list
+      parameters:
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a2
+  /admin/companies/{id}:
+    get:
+      operationId: CompaniesController_get
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a2
+    patch:
+      operationId: CompaniesController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyDto'
+      responses:
+        '200':
+          description: ''
+      tags: *a2
+  /admin/companies/{id}/status:
+    post:
+      operationId: CompaniesController_setStatus
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyStatusDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a2
+  /admin/companies/{id}/settings:
+    get:
+      operationId: CompaniesController_getSettings
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a2
+    put:
+      operationId: CompaniesController_updateSettings
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a2
+  /admin/companies/{id}/onboarding-packet:
+    post:
+      operationId: CompaniesController_onboardingPacket
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a2
+  /admin/companies/{id}/keys:
+    post:
+      operationId: CredentialsController_issue
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueKeyDto'
+      responses:
+        '201':
+          description: ''
+      tags: &a3
+        - admin-credentials
+    get:
+      operationId: CredentialsController_list
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a3
+  /admin/companies/{id}/keys/{keyId}:
+    delete:
+      operationId: CredentialsController_revoke
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: keyId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a3
+  /admin/companies/{id}/keys/{keyId}/rotate:
+    post:
+      operationId: CredentialsController_rotate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: keyId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a3
+  /admin/companies/{id}/webhook-secret/rotate:
+    post:
+      operationId: CredentialsController_rotateWebhookSecret
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a3
+  /admin/devices:
+    get:
+      operationId: DevicesAdminController_list
+      parameters:
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: online
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a4
+        - admin-devices
+  /admin/devices/{id}:
+    get:
+      operationId: DevicesAdminController_get
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a4
+    patch:
+      operationId: DevicesAdminController_patch
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchDeviceDto'
+      responses:
+        '200':
+          description: ''
+      tags: *a4
+  /admin/devices/{id}/block:
+    post:
+      operationId: DevicesAdminController_block
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a4
+  /admin/devices/{id}/unblock:
+    post:
+      operationId: DevicesAdminController_unblock
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a4
+  /admin/devices/{id}/retire:
+    post:
+      operationId: DevicesAdminController_retire
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a4
+  /admin/devices/{id}/force-sync:
+    post:
+      operationId: DevicesAdminController_forceSync
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a4
+  /admin/devices/{id}/rotate-token:
+    post:
+      operationId: DevicesAdminController_rotateToken
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a4
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -7,7 +461,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a1
+      tags: &a5
         - Probe
   /probe/server:
     get:
@@ -16,7 +470,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a1
+      tags: *a5
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -24,7 +478,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a1
+      tags: *a5
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -32,7 +486,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a1
+      tags: *a5
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -40,7 +494,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a1
+      tags: *a5
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -48,7 +502,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a1
+      tags: *a5
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.
@@ -62,4 +516,31 @@ components:
       scheme: bearer
       bearerFormat: JWT
       type: http
-  schemas: {}
+  schemas:
+    LoginDto:
+      type: object
+      properties: {}
+    MfaTokenDto:
+      type: object
+      properties: {}
+    TotpVerifyDto:
+      type: object
+      properties: {}
+    ChangePasswordDto:
+      type: object
+      properties: {}
+    CreateCompanyDto:
+      type: object
+      properties: {}
+    UpdateCompanyDto:
+      type: object
+      properties: {}
+    CompanyStatusDto:
+      type: object
+      properties: {}
+    IssueKeyDto:
+      type: object
+      properties: {}
+    PatchDeviceDto:
+      type: object
+      properties: {}

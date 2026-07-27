@@ -9,6 +9,11 @@ import { PrismaModule } from './common/prisma/prisma.module.js';
 import { RateLimitModule } from './common/ratelimit/rate-limit.module.js';
 import { RedisModule } from './common/redis/redis.module.js';
 import { ConfigModule } from './config/config.module.js';
+import { AuditModule } from './modules/admin/audit/audit.module.js';
+import { AdminAuthModule } from './modules/admin/auth/admin-auth.module.js';
+import { CompaniesModule } from './modules/companies/companies.module.js';
+import { CredentialsModule } from './modules/credentials/credentials.module.js';
+import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
 
@@ -22,6 +27,11 @@ import { ProbeModule } from './modules/probe/probe.module.js';
     AuthModule,
     RateLimitModule,
     IdempotencyModule,
+    AuditModule,
+    AdminAuthModule,
+    CompaniesModule,
+    CredentialsModule,
+    DevicesAdminModule,
     HealthModule,
     ProbeModule,
   ],

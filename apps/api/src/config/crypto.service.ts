@@ -29,7 +29,8 @@ export class CryptoService {
     return Buffer.concat([Buffer.from([VERSION]), iv, tag, ct]);
   }
 
-  decrypt(blob: Buffer): string {
+  decrypt(input: Uint8Array): string {
+    const blob = Buffer.from(input);
     if (blob.length < 1 + IV_LEN + TAG_LEN) {
       throw new Error('ciphertext blob too short');
     }

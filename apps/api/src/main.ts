@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -21,6 +22,7 @@ export async function createApp(): Promise<NestExpressApplication> {
 
   app.setGlobalPrefix('api/v1', { exclude: ['healthz', 'readyz', 'version', 'metrics'] });
   app.use(helmet());
+  app.use(cookieParser());
   app.enableCors({ origin: config.admin.origin, credentials: true });
   app.useBodyParser('json', { limit: '256kb' });
   app.useGlobalPipes(
