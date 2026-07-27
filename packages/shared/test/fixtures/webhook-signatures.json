@@ -1,0 +1,10 @@
+{
+  "secret": "whsec_test_secret_do_not_use",
+  "prevSecret": "whsec_previous_secret_rotation",
+  "timestamp": 1785312962,
+  "rawBody": "{\"event_id\":\"018f6b2c-9a7e-7c31-b0d2-4f5a1c8e9b00\",\"event_type\":\"payment.verified\",\"amount\":\"1250.00\"}",
+  "expected_v1": "472c223500e6aad7c499fb68d0bbbd05338a5e5dcfab4cf35eb38dc5bc8f12c5",
+  "expected_v0": "9d1dd76d26519f28f84c72fcc02cb6d97f241a91eefc0c73769c2fa463f2b587",
+  "header_single": "t=1785312962,v1=472c223500e6aad7c499fb68d0bbbd05338a5e5dcfab4cf35eb38dc5bc8f12c5",
+  "header_rotating": "t=1785312962,v1=472c223500e6aad7c499fb68d0bbbd05338a5e5dcfab4cf35eb38dc5bc8f12c5,v0=9d1dd76d26519f28f84c72fcc02cb6d97f241a91eefc0c73769c2fa463f2b587"
+}

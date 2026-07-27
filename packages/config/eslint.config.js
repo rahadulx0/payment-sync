@@ -1,0 +1,115 @@
+import path from 'node:path';
+
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import importX from 'eslint-plugin-import-x';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+const repoRoot = path.resolve(import.meta.dirname, '../..');
+
+// Money must never be parsed with float math (CLAUDE.md rule 1).
+const amountBans = [
+  {
+    selector: "CallExpression[callee.name='parseFloat'] Identifier[name=/[Aa]mount/]",
+    message: 'Do not parseFloat() an amount. Route money through packages/shared Money.',
+  },
+  {
+    selector: "CallExpression[callee.name='Number'] Identifier[name=/[Aa]mount/]",
+    message: 'Do not Number() an amount. Route money through packages/shared Money.',
+  },
+];
+
+// Parsers must be pure functions of their inputs (CLAUDE.md rule 10, ADR-5).
+const parserPurityBans = [
+  {
+    selector: "MemberExpression[object.name='Date'][property.name='now']",
+    message: 'packages/parsers must be pure: no Date.now() (inject `now`).',
+  },
+  {
+    selector: "NewExpression[callee.name='Date']",
+    message: 'packages/parsers must be pure: no new Date() (inject `now`).',
+  },
+  {
+    selector: "MemberExpression[object.name='Math'][property.name='random']",
+    message: 'packages/parsers must be pure: no Math.random().',
+  },
+];
+
+/** Shared flat ESLint config for the whole workspace. */
+export default tseslint.config(
+  {
+    ignores: [
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      '**/*.generated.ts',
+      '**/.next/**',
+      'apps/android/**',
+    ],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: repoRoot,
+      },
+      globals: { ...globals.node },
+    },
+    plugins: { 'import-x': importX },
+    rules: {
+      'import-x/order': [
+        'error',
+        {
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+        },
+      ],
+      'no-restricted-syntax': ['error', ...amountBans],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'process',
+          property: 'env',
+          message:
+            'Read config via the validated config module, not process.env (apps/*/src/config only).',
+        },
+      ],
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true, allowBoolean: true },
+      ],
+    },
+  },
+  {
+    // Parsers get the amount bans plus purity bans.
+    files: ['packages/parsers/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...amountBans, ...parserPurityBans],
+    },
+  },
+  {
+    // process.env is legitimate inside config modules and tooling.
+    files: [
+      'apps/*/src/config/**/*.ts',
+      'packages/config/**',
+      '**/*.config.{js,ts,mjs,cjs}',
+      '**/vitest.*.ts',
+    ],
+    rules: {
+      'no-restricted-properties': 'off',
+    },
+  },
+  {
+    // Plain JS tooling files: no type-aware linting.
+    files: ['**/*.{js,mjs,cjs}'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  prettier,
+);

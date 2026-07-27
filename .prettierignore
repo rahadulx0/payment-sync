@@ -1,0 +1,12 @@
+# Dependencies / build / generated
+node_modules/
+**/dist/
+coverage/
+pnpm-lock.yaml
+.claude/
+
+# Source-of-truth prose docs — maintained by hand, not Prettier-managed
+architecture.md
+plan.md
+CLAUDE.md
+workplan/

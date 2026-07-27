@@ -1,0 +1,42 @@
+# Local development datastores only (workplan/01 §4.5).
+# Ports are shifted off the defaults so a local Postgres/Redis install doesn't clash.
+# Containers run TZ=UTC — a non-negotiable (CLAUDE.md rule 2).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: paysync-dev-postgres
+    environment:
+      POSTGRES_USER: paysync
+      POSTGRES_PASSWORD: paysync
+      POSTGRES_DB: paysync
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - '5433:5432'
+    volumes:
+      - paysync-dev-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U paysync -d paysync']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: paysync-dev-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    environment:
+      TZ: UTC
+    ports:
+      - '6380:6379'
+    volumes:
+      - paysync-dev-redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  paysync-dev-pgdata:
+  paysync-dev-redisdata:

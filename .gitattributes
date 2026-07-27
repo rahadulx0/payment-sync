@@ -1,0 +1,20 @@
+# Normalize line endings: repo is developed on Windows, deployed on Linux.
+# A CRLF in a shell script breaks on the VPS (see workplan/01 §8).
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.apk binary
+*.aab binary

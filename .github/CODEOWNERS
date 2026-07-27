@@ -1,0 +1,7 @@
+# Single-operator platform: the admin owns everything by default.
+* @AkibHossainOmi
+
+# Money-critical paths — extra care on review.
+/packages/shared/src/money.ts   @AkibHossainOmi
+/packages/shared/src/hmac.ts    @AkibHossainOmi
+/packages/parsers/               @AkibHossainOmi
