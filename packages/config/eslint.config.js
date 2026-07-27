@@ -98,6 +98,8 @@ export default tseslint.config(
     // process.env is legitimate inside config modules and tooling.
     files: [
       'apps/*/src/config/**/*.ts',
+      'apps/*/prisma/**/*.ts',
+      '**/scripts/**',
       'packages/config/**',
       '**/*.config.{js,ts,mjs,cjs}',
       '**/vitest.*.ts',

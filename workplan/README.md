@@ -149,7 +149,7 @@ Update the status column in this table as part of each task's PR.
 | # | Task | Status | PR | Notes |
 |---|---|---|---|---|
 | 01 | Foundation & Dev Environment | ☑ Done | task/01-foundation-and-dev-environment | monorepo, shared primitives (money/hmac/time/ids), config, parsers shell, infra dev compose, CI, hooks |
-| 02 | Data Model & Migrations | ☐ Not started | | |
+| 02 | Data Model & Migrations | ☑ Done | main | Prisma schema (all §6 tables + match_attempts), invariant SQL migration, seed, embedded-postgres test harness, 123 tests incl. failing-insert constraint proofs |
 | 03 | API Core & Auth Primitives | ☐ Not started | | |
 | 04 | Control Plane | ☐ Not started | | |
 | 05 | SMS Parsing Subsystem | ☐ Not started | | |

@@ -1,0 +1,31 @@
+{
+  "name": "@paysync/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "node scripts/with-pg.mjs prisma migrate dev",
+    "prisma:migrate:create": "node scripts/with-pg.mjs prisma migrate dev --create-only",
+    "prisma:status": "node scripts/with-pg.mjs prisma migrate status",
+    "db:seed": "node scripts/with-pg.mjs prisma db seed"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "2.0.2",
+    "@paysync/shared": "workspace:*",
+    "@prisma/client": "6.2.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.11.10",
+    "embedded-postgres": "16.14.0-beta.17",
+    "pg": "8.13.1",
+    "prisma": "6.2.1",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "2.1.8"
+  }
+}

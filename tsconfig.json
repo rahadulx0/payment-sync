@@ -8,6 +8,7 @@
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
     "vitest.config.ts",
+    "vitest.workspace.ts",
     "packages/config/vitest.base.ts"
   ]
 }

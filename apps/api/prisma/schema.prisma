@@ -1,0 +1,549 @@
+// payment-sync data model (architecture.md §6).
+// Prisma-managed tables/enums/basic indexes live here; the correctness invariants
+// that Prisma cannot express (partial unique indexes, CHECK constraints, the
+// updated_at trigger, trigram indexes) are added as raw SQL migrations — see
+// prisma/migrations/*_invariants. Money is NUMERIC(14,2); time is timestamptz UTC.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums — kept identical to packages/shared/src/enums.ts (parity test enforces).
+// ---------------------------------------------------------------------------
+
+enum Provider {
+  BKASH
+  NAGAD
+  UPAY
+  UNKNOWN
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum DeviceStatus {
+  ACTIVE
+  BLOCKED
+  RETIRED
+}
+
+enum KeyType {
+  SERVER
+  DEVICE_ENROLL
+}
+
+enum ParseStatus {
+  PARSED
+  PARTIAL
+  UNPARSED
+  IGNORED
+}
+
+enum MatchStatus {
+  UNMATCHED
+  MATCHED
+  IN_REVIEW
+  IGNORED
+  DUPLICATE_TXN
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  MANUAL_REVIEW
+  EXPIRED
+  CANCELLED
+  REJECTED
+}
+
+enum MatchMode {
+  EXACT
+  HEURISTIC
+}
+
+enum VerificationMethod {
+  EXACT_TXN_ID
+  HEURISTIC_AMOUNT_WINDOW
+  MANUAL_ADMIN
+}
+
+enum UploadSource {
+  REALTIME
+  MANUAL_SYNC
+  RECONCILE
+}
+
+enum ReviewReason {
+  AMBIGUOUS_CANDIDATES
+  AMOUNT_MISMATCH
+  DUPLICATE_TXN_ID
+  SUSPICIOUS_SMS
+  UNPARSED_MESSAGE
+}
+
+enum ReviewStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum MatchTrigger {
+  SMS_UPLOAD
+  ORDER_REGISTER
+  RESCAN
+  REPARSE
+  ADMIN
+}
+
+enum MatchResult {
+  VERIFIED
+  UNMATCHED
+  REVIEW
+  IGNORED
+  DUPLICATE
+  GUARD_REJECTED
+}
+
+enum MatchPass {
+  EXACT
+  HEURISTIC
+  NONE
+}
+
+enum WebhookEventStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  DEAD
+  CANCELLED
+}
+
+enum ActorType {
+  ADMIN
+  SYSTEM
+  CLIENT
+  DEVICE
+}
+
+// ---------------------------------------------------------------------------
+// Tenant core
+// ---------------------------------------------------------------------------
+
+model Company {
+  id                        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_code              String        @unique @db.VarChar(32)
+  name                      String        @db.VarChar(160)
+  contact_email             String?       @db.VarChar(160)
+  contact_phone             String?       @db.VarChar(32)
+  status                    CompanyStatus @default(ACTIVE)
+  webhook_secret_enc        Bytes?
+  webhook_secret_prev_enc   Bytes?
+  webhook_secret_rotated_at DateTime?     @db.Timestamptz(3)
+  default_callback_url      String?
+  notes                     String?
+  created_at                DateTime      @default(now()) @db.Timestamptz(3)
+  updated_at                DateTime      @updatedAt @db.Timestamptz(3)
+  disabled_at               DateTime?     @db.Timestamptz(3)
+
+  settings             CompanySettings?
+  apiKeys              ApiKey[]
+  devices              Device[]
+  smsLogs              SmsLog[]
+  paymentRequests      PaymentRequest[]
+  verifiedTransactions VerifiedTransaction[]
+  webhookEvents        WebhookEvent[]
+
+  @@map("companies")
+}
+
+model CompanySettings {
+  company_id                 String   @id @db.Uuid
+  order_ttl_minutes          Int      @default(60)
+  late_match_grace_hours     Int      @default(24)
+  heuristic_window_minutes   Int      @default(30)
+  heuristic_enabled          Boolean  @default(true)
+  amount_tolerance           Decimal  @default(0) @db.Decimal(14, 2)
+  require_sender_match       Boolean  @default(false)
+  auto_verify_min_confidence Decimal  @default(0.90) @db.Decimal(3, 2)
+  allowed_providers          Provider[] @default([BKASH, NAGAD, UPAY])
+  webhook_timeout_ms         Int      @default(8000)
+  webhook_max_attempts       Int      @default(8)
+  rate_limit_register_rpm    Int      @default(120)
+  sms_retention_days         Int      @default(180)
+  notify_on_expiry           Boolean  @default(true)
+  notify_on_review           Boolean  @default(true)
+  review_sla_minutes         Int      @default(30)
+  max_devices                Int      @default(1)
+  max_sms_per_day            Int      @default(2000)
+  created_at                 DateTime @default(now()) @db.Timestamptz(3)
+  updated_at                 DateTime @updatedAt @db.Timestamptz(3)
+
+  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@map("company_settings")
+}
+
+model ApiKey {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id   String    @db.Uuid
+  key_type     KeyType
+  prefix       String    @db.VarChar(16)
+  key_hash     String    @db.VarChar(97)
+  label        String    @db.VarChar(80)
+  scopes       String[]
+  last_used_at DateTime? @db.Timestamptz(3)
+  last_used_ip String?   @db.VarChar(64)
+  expires_at   DateTime? @db.Timestamptz(3)
+  revoked_at   DateTime? @db.Timestamptz(3)
+  created_at   DateTime  @default(now()) @db.Timestamptz(3)
+  updated_at   DateTime  @updatedAt @db.Timestamptz(3)
+
+  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@index([prefix])
+  @@index([company_id, key_type])
+  @@map("api_keys")
+}
+
+model Device {
+  id                      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id              String       @db.Uuid
+  device_name             String       @db.VarChar(80)
+  install_id              String       @unique @db.Uuid
+  model                   String?      @db.VarChar(80)
+  manufacturer            String?      @db.VarChar(80)
+  android_version         String?      @db.VarChar(40)
+  app_version             String?      @db.VarChar(40)
+  wallet_msisdn           String?      @db.VarChar(20)
+  token_hash              String       @db.VarChar(97)
+  token_issued_at         DateTime     @default(now()) @db.Timestamptz(3)
+  token_rotated_at        DateTime?    @db.Timestamptz(3)
+  status                  DeviceStatus @default(ACTIVE)
+  last_heartbeat_at       DateTime?    @db.Timestamptz(3)
+  last_sms_at             DateTime?    @db.Timestamptz(3)
+  battery_pct             Int?
+  is_ignoring_battery_opt Boolean?
+  has_sms_permission      Boolean?
+  network_type            String?      @db.VarChar(20)
+  clock_skew_seconds      Int          @default(0)
+  created_at              DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at              DateTime     @updatedAt @db.Timestamptz(3)
+
+  company Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  smsLogs SmsLog[]
+
+  @@index([company_id, status])
+  @@map("devices")
+}
+
+// ---------------------------------------------------------------------------
+// Parser rules (data, not code)
+// ---------------------------------------------------------------------------
+
+model ProviderProfile {
+  provider         Provider @id
+  display_name     String   @db.VarChar(80)
+  sender_addresses String[]
+  msisdn_prefixes  String[]
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now()) @db.Timestamptz(3)
+  updated_at       DateTime @updatedAt @db.Timestamptz(3)
+
+  parserRules ParserRule[]
+
+  @@map("provider_profiles")
+}
+
+model ParserRule {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider           Provider
+  version            Int
+  rule               Json
+  is_active          Boolean  @default(false)
+  created_by         String?  @db.VarChar(80)
+  fixture_pass_count Int      @default(0)
+  created_at         DateTime @default(now()) @db.Timestamptz(3)
+
+  providerProfile ProviderProfile @relation(fields: [provider], references: [provider])
+
+  @@unique([provider, version])
+  @@map("parser_rules")
+}
+
+// ---------------------------------------------------------------------------
+// The money path
+// ---------------------------------------------------------------------------
+
+model SmsLog {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id         String       @db.Uuid
+  device_id          String?      @db.Uuid
+  client_msg_hash    String       @db.Char(64)
+  content_hash       String       @db.Char(64)
+  sms_address        String       @db.VarChar(32)
+  provider           Provider     @default(UNKNOWN)
+  raw_message        String
+  transaction_id     String?      @db.VarChar(64)
+  amount             Decimal?     @db.Decimal(14, 2)
+  sender_msisdn      String?      @db.VarChar(20)
+  balance_after      Decimal?     @db.Decimal(14, 2)
+  fee                Decimal?     @db.Decimal(14, 2)
+  sms_timestamp      DateTime?    @db.Timestamptz(3)
+  device_received_at DateTime     @db.Timestamptz(3)
+  uploaded_at        DateTime     @default(now()) @db.Timestamptz(3)
+  parse_status       ParseStatus  @default(UNPARSED)
+  parser_rule_version Int?
+  parse_confidence   Decimal      @default(0) @db.Decimal(3, 2)
+  match_status       MatchStatus  @default(UNMATCHED)
+  upload_source      UploadSource @default(REALTIME)
+  flags              String[]
+  created_at         DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at         DateTime     @updatedAt @db.Timestamptz(3)
+
+  company             Company              @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  device              Device?              @relation(fields: [device_id], references: [id])
+  verifiedTransaction VerifiedTransaction?
+
+  @@unique([company_id, client_msg_hash])
+  @@index([company_id, transaction_id])
+  @@index([company_id, match_status, sms_timestamp(sort: Desc)])
+  @@index([company_id, amount, sms_timestamp])
+  @@map("sms_logs")
+}
+
+model PaymentRequest {
+  id                     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id             String        @db.Uuid
+  order_id               String        @db.VarChar(80)
+  transaction_id         String?       @db.VarChar(64)
+  expected_amount        Decimal       @db.Decimal(14, 2)
+  expected_provider      Provider?
+  expected_sender_msisdn String?       @db.VarChar(20)
+  callback_url           String
+  status                 PaymentStatus @default(PENDING)
+  match_mode             MatchMode
+  amount_tolerance       Decimal       @db.Decimal(14, 2)
+  metadata               Json?
+  expires_at             DateTime      @db.Timestamptz(3)
+  verified_at            DateTime?     @db.Timestamptz(3)
+  created_at             DateTime      @default(now()) @db.Timestamptz(3)
+  updated_at             DateTime      @updatedAt @db.Timestamptz(3)
+
+  company             Company              @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  verifiedTransaction VerifiedTransaction?
+
+  @@unique([company_id, order_id])
+  @@index([company_id, status, expires_at])
+  @@map("payment_requests")
+}
+
+model VerifiedTransaction {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id          String             @db.Uuid
+  payment_request_id  String             @unique @db.Uuid
+  sms_log_id          String             @unique @db.Uuid
+  verification_method VerificationMethod
+  confidence          Decimal            @db.Decimal(3, 2)
+  amount_delta        Decimal            @db.Decimal(14, 2)
+  matched_by_admin_id String?            @db.Uuid
+  was_late            Boolean            @default(false)
+  verified_at         DateTime           @default(now()) @db.Timestamptz(3)
+
+  company        Company        @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  paymentRequest PaymentRequest @relation(fields: [payment_request_id], references: [id])
+  smsLog         SmsLog         @relation(fields: [sms_log_id], references: [id])
+
+  @@map("verified_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Webhooks
+// ---------------------------------------------------------------------------
+
+model WebhookEvent {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id         String             @db.Uuid
+  payment_request_id String?            @db.Uuid
+  event_type         String             @db.VarChar(40)
+  payload            Json
+  status             WebhookEventStatus @default(PENDING)
+  attempt_count      Int                @default(0)
+  next_attempt_at    DateTime?          @db.Timestamptz(3)
+  delivered_at       DateTime?          @db.Timestamptz(3)
+  paused             Boolean            @default(false)
+  created_at         DateTime           @default(now()) @db.Timestamptz(3)
+  updated_at         DateTime           @updatedAt @db.Timestamptz(3)
+
+  company    Company           @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([status, next_attempt_at])
+  @@index([company_id, created_at(sort: Desc)])
+  @@map("webhook_events")
+}
+
+model WebhookDelivery {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id        String   @db.Uuid
+  attempt_no      Int
+  request_url     String
+  request_headers Json
+  response_status Int?
+  response_body   String?
+  error_class     String?  @db.VarChar(20)
+  duration_ms     Int?
+  attempted_at    DateTime @default(now()) @db.Timestamptz(3)
+
+  event WebhookEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@index([event_id, attempt_no])
+  @@map("webhook_deliveries")
+}
+
+// ---------------------------------------------------------------------------
+// Reviews & decision trace
+// ---------------------------------------------------------------------------
+
+model MatchReview {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id         String       @db.Uuid
+  sms_log_id         String?      @db.Uuid
+  payment_request_id String?      @db.Uuid
+  reason             ReviewReason
+  candidates         Json
+  status             ReviewStatus @default(OPEN)
+  resolved_by        String?      @db.Uuid
+  resolution_note    String?
+  resolved_at        DateTime?    @db.Timestamptz(3)
+  created_at         DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at         DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([company_id, status, created_at])
+  @@map("match_reviews")
+}
+
+model MatchAttempt {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id          String       @db.Uuid
+  trigger             MatchTrigger
+  sms_log_id          String?      @db.Uuid
+  payment_request_id  String?      @db.Uuid
+  result              MatchResult
+  pass                MatchPass    @default(NONE)
+  guard_failed        String?      @db.VarChar(64)
+  candidates          Json?
+  chosen_score        Decimal?     @db.Decimal(3, 2)
+  runner_up_score     Decimal?     @db.Decimal(3, 2)
+  parser_rule_version Int?
+  duration_ms         Int?
+  created_at          DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([sms_log_id, created_at(sort: Desc)])
+  @@index([payment_request_id, created_at(sort: Desc)])
+  @@index([company_id, result, created_at(sort: Desc)])
+  @@map("match_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Admin identity, audit, auth, idempotency
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String    @unique @db.VarChar(160)
+  password_hash       String    @db.VarChar(97)
+  totp_secret_enc     Bytes?
+  totp_enrolled_at    DateTime? @db.Timestamptz(3)
+  recovery_codes_hash String[]
+  failed_login_count  Int       @default(0)
+  locked_until        DateTime? @db.Timestamptz(3)
+  last_login_at       DateTime? @db.Timestamptz(3)
+  last_login_ip       String?   @db.VarChar(64)
+  created_at          DateTime  @default(now()) @db.Timestamptz(3)
+  updated_at          DateTime  @updatedAt @db.Timestamptz(3)
+
+  sessions AdminSession[]
+
+  @@map("admin_users")
+}
+
+model AdminSession {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  admin_id       String    @db.Uuid
+  session_family String    @db.Uuid
+  token_hash     String    @db.VarChar(97)
+  ip             String?   @db.VarChar(64)
+  user_agent     String?
+  revoked_at     DateTime? @db.Timestamptz(3)
+  replaced_by    String?   @db.Uuid
+  expires_at     DateTime  @db.Timestamptz(3)
+  last_used_at   DateTime? @db.Timestamptz(3)
+  created_at     DateTime  @default(now()) @db.Timestamptz(3)
+
+  admin AdminUser @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+
+  @@index([admin_id])
+  @@index([session_family])
+  @@map("admin_sessions")
+}
+
+model AuditLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_type  ActorType
+  actor_id    String?   @db.Uuid
+  action      String    @db.VarChar(80)
+  entity_type String?   @db.VarChar(60)
+  entity_id   String?   @db.VarChar(80)
+  before      Json?
+  after       Json?
+  company_id  String?   @db.Uuid
+  ip          String?   @db.VarChar(64)
+  user_agent  String?
+  created_at  DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([actor_type, created_at(sort: Desc)])
+  @@index([company_id, created_at(sort: Desc)])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}
+
+model AuthAttempt {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind       String   @db.VarChar(20)
+  subject    String?  @db.VarChar(160)
+  outcome    String   @db.VarChar(20)
+  reason     String?  @db.VarChar(80)
+  company_id String?  @db.Uuid
+  ip         String?  @db.VarChar(64)
+  user_agent String?
+  created_at DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([kind, created_at(sort: Desc)])
+  @@index([subject, created_at(sort: Desc)])
+  @@map("auth_attempts")
+}
+
+model IdempotencyKey {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id      String   @db.Uuid
+  endpoint        String   @db.VarChar(80)
+  key             String   @db.VarChar(200)
+  request_hash    String   @db.Char(64)
+  response_status Int?
+  response_body   Json?
+  state           String   @db.VarChar(20)
+  expires_at      DateTime @db.Timestamptz(3)
+  created_at      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([company_id, endpoint, key])
+  @@map("idempotency_keys")
+}
