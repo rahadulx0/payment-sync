@@ -82,7 +82,17 @@ export class AudienceGuard implements CanActivate {
       where: { install_id: installId },
       include: { company: true },
     });
-    const ok = device !== null && (await this.credentials.verify(token, device.token_hash));
+    let ok = device !== null && (await this.credentials.verify(token, device.token_hash));
+    // Accept the previous token for 24h after a rotation (crash-safe rotation).
+    if (
+      device !== null &&
+      !ok &&
+      device.prev_token_hash !== null &&
+      device.token_rotated_at !== null &&
+      device.token_rotated_at.getTime() > Date.now() - 24 * 60 * 60 * 1000
+    ) {
+      ok = await this.credentials.verify(token, device.prev_token_hash);
+    }
     if (device === null || !ok) {
       await this.authAttempts.record({
         kind: 'DEVICE_TOKEN',

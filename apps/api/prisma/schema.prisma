@@ -226,6 +226,7 @@ model Device {
   app_version             String?      @db.VarChar(40)
   wallet_msisdn           String?      @db.VarChar(20)
   token_hash              String       @db.VarChar(97)
+  prev_token_hash         String?      @db.VarChar(97)
   token_issued_at         DateTime     @default(now()) @db.Timestamptz(3)
   token_rotated_at        DateTime?    @db.Timestamptz(3)
   status                  DeviceStatus @default(ACTIVE)
@@ -242,11 +243,27 @@ model Device {
   created_at              DateTime     @default(now()) @db.Timestamptz(3)
   updated_at              DateTime     @updatedAt @db.Timestamptz(3)
 
-  company Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  smsLogs SmsLog[]
+  company      Company       @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  smsLogs      SmsLog[]
+  deviceEvents DeviceEvent[]
 
   @@index([company_id, status])
   @@map("devices")
+}
+
+model DeviceEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  device_id  String   @db.Uuid
+  company_id String   @db.Uuid
+  type       String   @db.VarChar(40)
+  at         DateTime @db.Timestamptz(3)
+  detail     Json?
+  created_at DateTime @default(now()) @db.Timestamptz(3)
+
+  device Device @relation(fields: [device_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id, created_at(sort: Desc)])
+  @@map("device_events")
 }
 
 // ---------------------------------------------------------------------------

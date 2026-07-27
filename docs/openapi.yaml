@@ -510,6 +510,80 @@ paths:
         '201':
           description: ''
       tags: *a5
+  /device/register:
+    post:
+      operationId: DevicesController_register
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegisterDto'
+      responses:
+        '201':
+          description: ''
+      tags: &a6
+        - device
+  /device/heartbeat:
+    post:
+      operationId: DevicesController_heartbeat
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a6
+  /device/config:
+    get:
+      operationId: DevicesController_getConfig
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *a6
+  /device/token/rotate:
+    post:
+      operationId: DevicesController_rotate
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *a6
+  /device/events:
+    post:
+      operationId: DevicesController_events
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceEventsDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a6
+  /sms/upload:
+    post:
+      operationId: SmsController_upload
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsUploadDto'
+      responses:
+        '202':
+          description: ''
+      tags:
+        - device-sms
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -517,7 +591,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a6
+      tags: &a7
         - Probe
   /probe/server:
     get:
@@ -526,7 +600,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a6
+      tags: *a7
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -534,7 +608,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a6
+      tags: *a7
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -542,7 +616,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a6
+      tags: *a7
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -550,7 +624,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a6
+      tags: *a7
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -558,7 +632,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a6
+      tags: *a7
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.
@@ -598,5 +672,17 @@ components:
       type: object
       properties: {}
     PatchDeviceDto:
+      type: object
+      properties: {}
+    DeviceRegisterDto:
+      type: object
+      properties: {}
+    HeartbeatDto:
+      type: object
+      properties: {}
+    DeviceEventsDto:
+      type: object
+      properties: {}
+    SmsUploadDto:
       type: object
       properties: {}

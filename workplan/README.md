@@ -153,7 +153,7 @@ Update the status column in this table as part of each task's PR.
 | 03 | API Core & Auth Primitives | ☑ Done | main | NestJS bootstrap, zod config + AES-GCM crypto, pino logging + request ctx, error envelope, 3-audience default-deny guard, tenant-scoped Prisma, Redis rate limit, idempotency, health/metrics, OpenAPI; 17 e2e + 140 tests |
 | 04 | Control Plane | ☑ Done | main | admin login+TOTP+recovery codes, session rotation w/ reuse detection, companies + dual-key issuance/rotation + webhook-secret rotation, settings bounds, device admin + directives, audit w/ redaction; 9 e2e (150 tests) |
 | 05 | SMS Parsing Subsystem | ☑ Done | main | data-driven rules + normalizers + pure reference parser; bKash Cash In & Send Money as exact fixtures (debits IGNORED); server ParserService + RuleRepository (redis-invalidated) + reparse/health admin; 180 tests |
-| 06 | Device API & SMS Ingestion | ☐ Not started | | |
+| 06 | Device API & SMS Ingestion | ☑ Done | main | device register/heartbeat+directives/config(ETag)/token-rotate/events; sms/upload batch pipeline: dedupe (client+content+batch), server parse, matching-hook stub; 8 e2e (188 tests) |
 | 07 | Client Payments API | ☐ Not started | | |
 | 08 | Matching Engine — Exact | ☐ Not started | | |
 | 09 | Webhook Delivery | ☐ Not started | | |

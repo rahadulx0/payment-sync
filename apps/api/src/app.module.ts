@@ -14,9 +14,11 @@ import { AdminAuthModule } from './modules/admin/auth/admin-auth.module.js';
 import { CompaniesModule } from './modules/companies/companies.module.js';
 import { CredentialsModule } from './modules/credentials/credentials.module.js';
 import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module.js';
+import { DevicesModule } from './modules/devices/devices.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
+import { SmsModule } from './modules/sms/sms.module.js';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { ProbeModule } from './modules/probe/probe.module.js';
     CredentialsModule,
     DevicesAdminModule,
     ParsingModule,
+    DevicesModule,
+    SmsModule,
     HealthModule,
     ProbeModule,
   ],
