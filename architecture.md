@@ -91,6 +91,7 @@ merchant's website registered as pending.
 | 11 | **Client integration = documented REST + OpenAPI + copy-paste signature snippets** (no SDK/plugin in v1) | Chosen scope; keeps the deliverable surface small | Shipping a WooCommerce plugin now (deferred to roadmap) |
 | 12 | **Multi-device modelled from day one** (`devices` table), even though "multiple phones" is a v2 feature | Retrofitting device identity into `sms_logs` later is a painful migration; cost now is one table | Company-only attribution |
 | 13 | **Order status is also pollable** (`GET /payments/{order_id}`) | Webhooks fail (client downtime, firewall, bad TLS). A poll fallback prevents "paid but order stuck" support tickets | Webhook-only delivery |
+| 14 | **A mistyped `transaction_id` on an exact-mode order is correctable** via `PATCH /payments/{order_id}/transaction-id`, but **only while PENDING or EXPIRED-within-grace** (never after VERIFIED); the correction re-runs matching immediately and is audited | The buyer typed the TrxID; a fat-finger must be fixable without abandoning the order, but a correction after verification could steal a second payment or rewrite history | Cancel-and-re-register (loses the order's history and any already-arrived SMS association); allowing edits anytime (a post-VERIFIED edit is an attack surface on money) |
 
 ---
 

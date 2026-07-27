@@ -154,7 +154,7 @@ Update the status column in this table as part of each task's PR.
 | 04 | Control Plane | ☑ Done | main | admin login+TOTP+recovery codes, session rotation w/ reuse detection, companies + dual-key issuance/rotation + webhook-secret rotation, settings bounds, device admin + directives, audit w/ redaction; 9 e2e (150 tests) |
 | 05 | SMS Parsing Subsystem | ☑ Done | main | data-driven rules + normalizers + pure reference parser; bKash Cash In & Send Money as exact fixtures (debits IGNORED); server ParserService + RuleRepository (redis-invalidated) + reparse/health admin; 180 tests |
 | 06 | Device API & SMS Ingestion | ☑ Done | main | device register/heartbeat+directives/config(ETag)/token-rotate/events; sms/upload batch pipeline: dedupe (client+content+batch), server parse, matching-hook stub; 8 e2e (188 tests) |
-| 07 | Client Payments API | ☐ Not started | | |
+| 07 | Client Payments API | ☑ Done | main | POST/GET/list/cancel payments, register (EXACT/HEURISTIC, idempotent, dup order/TrxID → 409, rate-limited); ADR-14 PATCH transaction-id correction (PENDING/expired-in-grace, re-match hook); SSRF SafeUrl guard; expiry sweep; webhook-test shell; 18 e2e (206 tests) |
 | 08 | Matching Engine — Exact | ☐ Not started | | |
 | 09 | Webhook Delivery | ☐ Not started | | |
 | 10 | Heuristic Matching & Reviews | ☐ Not started | | |

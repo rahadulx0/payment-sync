@@ -584,6 +584,109 @@ paths:
           description: ''
       tags:
         - device-sms
+  /payments/register:
+    post:
+      operationId: PaymentsController_register
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPaymentDto'
+      responses:
+        '201':
+          description: ''
+      tags: &a7
+        - payments
+  /payments/{orderId}:
+    get:
+      operationId: PaymentsController_get
+      parameters:
+        - name: orderId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a7
+  /payments:
+    get:
+      operationId: PaymentsController_list
+      parameters:
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: provider
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a7
+  /payments/{orderId}/cancel:
+    post:
+      operationId: PaymentsController_cancel
+      parameters:
+        - name: orderId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a7
+  /payments/{orderId}/transaction-id:
+    patch:
+      operationId: PaymentsController_correct
+      parameters:
+        - name: orderId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectTrxidDto'
+      responses:
+        '200':
+          description: ''
+      tags: *a7
+  /webhooks/test:
+    post:
+      operationId: WebhookTestController_test
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookTestDto'
+      responses:
+        '201':
+          description: ''
+      tags:
+        - webhooks
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -591,7 +694,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a7
+      tags: &a8
         - Probe
   /probe/server:
     get:
@@ -600,7 +703,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a7
+      tags: *a8
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -608,7 +711,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a7
+      tags: *a8
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -616,7 +719,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a7
+      tags: *a8
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -624,7 +727,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a7
+      tags: *a8
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -632,7 +735,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a7
+      tags: *a8
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.
@@ -684,5 +787,14 @@ components:
       type: object
       properties: {}
     SmsUploadDto:
+      type: object
+      properties: {}
+    RegisterPaymentDto:
+      type: object
+      properties: {}
+    CorrectTrxidDto:
+      type: object
+      properties: {}
+    WebhookTestDto:
       type: object
       properties: {}

@@ -2,6 +2,7 @@ import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common
 
 import { AuthModule } from './common/auth/auth.module.js';
 import { requestContextMiddleware } from './common/context/request-context.middleware.js';
+import { HttpModule } from './common/http/http.module.js';
 import { IdempotencyModule } from './common/idempotency/idempotency.module.js';
 import { LoggerModule } from './common/logging/logger.module.js';
 import { MetricsModule } from './common/metrics/metrics.module.js';
@@ -17,8 +18,10 @@ import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module
 import { DevicesModule } from './modules/devices/devices.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
 import { SmsModule } from './modules/sms/sms.module.js';
+import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
 
 @Module({
   imports: [
@@ -30,6 +33,7 @@ import { SmsModule } from './modules/sms/sms.module.js';
     AuthModule,
     RateLimitModule,
     IdempotencyModule,
+    HttpModule,
     AuditModule,
     AdminAuthModule,
     CompaniesModule,
@@ -38,6 +42,8 @@ import { SmsModule } from './modules/sms/sms.module.js';
     ParsingModule,
     DevicesModule,
     SmsModule,
+    PaymentsModule,
+    WebhooksModule,
     HealthModule,
     ProbeModule,
   ],
