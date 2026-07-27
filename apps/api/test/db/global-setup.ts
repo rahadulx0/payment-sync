@@ -1,14 +1,17 @@
 // Vitest global setup: boot ONE real embedded PostgreSQL 16 for the whole test
-// run, apply the migrations to a template database, and hand the connection
-// details to the workers via `provide`. Each DB-backed spec then clones the
-// template into its own isolated database (see harness.ts). No Docker required.
-import { readdirSync, readFileSync } from 'node:fs';
-import { mkdtempSync } from 'node:fs';
+// run, apply the migrations to a template database, and ensure a real Redis is
+// reachable. Connection details reach the workers via `provide`. Each DB-backed
+// spec clones the template into its own isolated database (see harness.ts).
+// No Docker required: Postgres is embedded; Redis is native (WSL locally, a
+// service on CI via REDIS_TEST_URL).
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import EmbeddedPostgres from 'embedded-postgres';
+import { Redis } from 'ioredis';
 import pg from 'pg';
 import type { GlobalSetupContext } from 'vitest/node';
 
@@ -26,14 +29,39 @@ export interface PgConnInfo {
 declare module 'vitest' {
   interface ProvidedContext {
     pg: PgConnInfo;
+    redisUrl: string;
   }
 }
 
 let instance: EmbeddedPostgres | undefined;
 
 function migrationsDir(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  return join(here, '..', '..', 'prisma', 'migrations');
+  return join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'prisma', 'migrations');
+}
+
+function ensureRedis(): string {
+  const fromEnv = process.env['REDIS_TEST_URL'];
+  if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv;
+  if (process.platform === 'win32') {
+    try {
+      execFileSync(
+        'wsl.exe',
+        [
+          '-d',
+          'Ubuntu',
+          '-e',
+          'bash',
+          '-lc',
+          'redis-server --daemonize yes --port 6399 --save "" --appendonly no',
+        ],
+        { stdio: 'ignore' },
+      );
+    } catch {
+      // best effort; a reachable Redis at 6399 may already exist
+    }
+    return 'redis://localhost:6399';
+  }
+  return 'redis://localhost:6379';
 }
 
 export async function setup({ provide }: GlobalSetupContext): Promise<void> {
@@ -63,10 +91,18 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
     .map((e) => e.name)
     .sort();
   for (const name of migrations) {
-    const sql = readFileSync(join(dir, name, 'migration.sql'), 'utf8');
-    await client.query(sql);
+    await client.query(readFileSync(join(dir, name, 'migration.sql'), 'utf8'));
   }
   await client.end();
+
+  const redisUrl = ensureRedis();
+  const redis = new Redis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true });
+  try {
+    await redis.connect();
+    await redis.flushall();
+  } finally {
+    redis.disconnect();
+  }
 
   provide('pg', {
     host: 'localhost',
@@ -75,6 +111,7 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
     password: 'postgres',
     template: TEMPLATE_DB,
   });
+  provide('redisUrl', redisUrl);
 }
 
 export async function teardown(): Promise<void> {

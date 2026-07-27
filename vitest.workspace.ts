@@ -1,10 +1,12 @@
+import swc from 'unplugin-swc';
 import { defineWorkspace } from 'vitest/config';
 
 // Two projects with different resolution roots:
-//  - unit: fast, pure package tests (no datastores).
-//  - db:   integration tests rooted at apps/api so embedded-postgres / pg / the
-//          Prisma client resolve from apps/api/node_modules. One real embedded
-//          PostgreSQL 16 boots once for the whole project (global-setup.ts).
+//  - unit: fast, pure package tests (no datastores, esbuild transform).
+//  - db:   integration/e2e tests rooted at apps/api so embedded-postgres / pg /
+//          ioredis / the Prisma client resolve there. Uses SWC so NestJS
+//          decorator metadata (emitDecoratorMetadata) is emitted. One real
+//          embedded PostgreSQL 16 boots once for the project (global-setup.ts).
 export default defineWorkspace([
   {
     test: {
@@ -14,6 +16,15 @@ export default defineWorkspace([
     },
   },
   {
+    plugins: [
+      swc.vite({
+        jsc: {
+          target: 'es2022',
+          transform: { legacyDecorator: true, decoratorMetadata: true },
+          keepClassNames: true,
+        },
+      }),
+    ],
     test: {
       name: 'db',
       root: './apps/api',

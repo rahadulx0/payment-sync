@@ -98,14 +98,35 @@ export default tseslint.config(
     // process.env is legitimate inside config modules and tooling.
     files: [
       'apps/*/src/config/**/*.ts',
+      'apps/*/src/openapi.ts',
       'apps/*/prisma/**/*.ts',
       '**/scripts/**',
+      '**/test/**',
       'packages/config/**',
       '**/*.config.{js,ts,mjs,cjs}',
       '**/vitest.*.ts',
     ],
     rules: {
       'no-restricted-properties': 'off',
+    },
+  },
+  {
+    // NestJS modules are intentionally empty decorated classes.
+    files: ['apps/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-extraneous-class': 'off',
+    },
+  },
+  {
+    // Tests exercise HTTP responses (supertest bodies are `any`) — the unsafe-any
+    // rules are impractical here and add no safety to assertions.
+    files: ['**/test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
   {

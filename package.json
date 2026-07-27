@@ -31,13 +31,15 @@
     "eslint": "9.18.0",
     "husky": "9.1.7",
     "lint-staged": "15.4.1",
+    "@swc/core": "1.13.5",
     "prettier": "3.4.2",
     "typescript": "5.7.3",
+    "unplugin-swc": "1.5.1",
     "vitest": "2.1.8"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
-      "eslint --fix",
+      "eslint --fix --cache",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [
