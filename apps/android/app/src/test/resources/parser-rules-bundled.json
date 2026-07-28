@@ -1,0 +1,170 @@
+[
+  {
+    "provider": "BKASH",
+    "version": 1,
+    "sender_addresses": [
+      "bKash",
+      "BKASH",
+      "16247"
+    ],
+    "message_types": [
+      {
+        "type": "CASH_IN",
+        "direction": "CREDIT",
+        "must_contain": [
+          "Cash In",
+          "from",
+          "TrxID"
+        ],
+        "must_not_contain": [
+          "Cash Out",
+          "Payment",
+          "sent"
+        ],
+        "patterns": {
+          "amount": "Cash In (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "sender_msisdn": "from\\s*(01[3-9][0-9]{8})",
+          "fee": "Fee (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "balance_after": "Balance (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "transaction_id": "TrxID\\s*([A-Z0-9]{6,20})",
+          "timestamp": "at\\s*([0-9]{2}/[0-9]{2}/[0-9]{4}\\s+[0-9]{2}:[0-9]{2})"
+        },
+        "timestamp_formats": [
+          "dd/MM/yyyy HH:mm"
+        ],
+        "required": [
+          "amount",
+          "transaction_id"
+        ]
+      },
+      {
+        "type": "SEND_MONEY",
+        "direction": "CREDIT",
+        "must_contain": [
+          "received",
+          "from",
+          "TrxID"
+        ],
+        "must_not_contain": [
+          "Cash Out",
+          "sent",
+          "Payment"
+        ],
+        "patterns": {
+          "amount": "received (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "sender_msisdn": "from\\s*(01[3-9][0-9]{8})",
+          "fee": "Fee (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "balance_after": "Balance (?:Tk|BDT)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)",
+          "transaction_id": "TrxID\\s*([A-Z0-9]{6,20})",
+          "timestamp": "at\\s*([0-9]{2}/[0-9]{2}/[0-9]{4}\\s+[0-9]{2}:[0-9]{2})"
+        },
+        "timestamp_formats": [
+          "dd/MM/yyyy HH:mm"
+        ],
+        "required": [
+          "amount",
+          "transaction_id"
+        ]
+      },
+      {
+        "type": "CASH_OUT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "Cash Out"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      },
+      {
+        "type": "SEND_MONEY_SENT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "sent"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      },
+      {
+        "type": "PAYMENT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "Payment"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      }
+    ]
+  },
+  {
+    "provider": "NAGAD",
+    "version": 1,
+    "sender_addresses": [
+      "NAGAD",
+      "Nagad",
+      "16167"
+    ],
+    "message_types": [
+      {
+        "type": "CASH_OUT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "Cash Out"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      },
+      {
+        "type": "SEND_MONEY_SENT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "sent"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      }
+    ]
+  },
+  {
+    "provider": "UPAY",
+    "version": 1,
+    "sender_addresses": [
+      "upay",
+      "UPAY",
+      "16268"
+    ],
+    "message_types": [
+      {
+        "type": "CASH_OUT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "Cash Out"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      },
+      {
+        "type": "SEND_MONEY_SENT",
+        "direction": "DEBIT",
+        "must_contain": [
+          "sent"
+        ],
+        "must_not_contain": [],
+        "patterns": {},
+        "timestamp_formats": [],
+        "required": []
+      }
+    ]
+  }
+]

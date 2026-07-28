@@ -10,3 +10,10 @@ architecture.md
 plan.md
 CLAUDE.md
 workplan/
+
+# Generated parser artifacts — must stay byte-identical to the export (CI drift check)
+apps/android/app/src/main/assets/parser-*.json
+apps/android/app/src/test/resources/parser-*.json
+packages/parsers/generated/
+# Android build artifacts and non-prettier sources
+apps/android/**

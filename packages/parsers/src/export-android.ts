@@ -24,18 +24,29 @@ export function buildFixturesBundle(): unknown[] {
   return loadJsonDir(join(packageRoot, 'fixtures')).flat();
 }
 
-function main(): void {
-  const outDir = join(packageRoot, 'generated');
-  mkdirSync(outDir, { recursive: true });
+function writeArtifacts(dir: string): void {
+  mkdirSync(dir, { recursive: true });
   writeFileSync(
-    join(outDir, 'parser-rules-bundled.json'),
+    join(dir, 'parser-rules-bundled.json'),
     `${JSON.stringify(buildRulesBundle(), null, 2)}\n`,
   );
   writeFileSync(
-    join(outDir, 'parser-fixtures.json'),
+    join(dir, 'parser-fixtures.json'),
     `${JSON.stringify(buildFixturesBundle(), null, 2)}\n`,
   );
-  process.stdout.write('exported android parser artifacts to packages/parsers/generated\n');
+}
+
+function main(): void {
+  writeArtifacts(join(packageRoot, 'generated'));
+  // The Android app ships the rules as a bundled fallback and asserts the Kotlin
+  // parser against the fixtures (Task 13 parity gate). Keeping both in lockstep
+  // here means a rule change can never silently diverge from the app.
+  const androidApp = join(packageRoot, '..', '..', 'apps', 'android', 'app');
+  writeArtifacts(join(androidApp, 'src', 'main', 'assets'));
+  writeArtifacts(join(androidApp, 'src', 'test', 'resources'));
+  process.stdout.write(
+    'exported android parser artifacts (generated/, android assets + test resources)\n',
+  );
 }
 
 const entry = process.argv[1];

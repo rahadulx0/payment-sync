@@ -1,0 +1,203 @@
+[
+  {
+    "id": "bkash-balance-inquiry-no-trxid-unparsed",
+    "address": "bKash",
+    "body": "Your bKash account balance is Tk 500.00. Thank you for using bKash.",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "BKASH",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "bkash-payment-out-of-scope-ignored",
+    "address": "bKash",
+    "body": "Your Payment of Tk 300.00 to Merchant XYZ is successful. Balance Tk 700.00. TrxID PZ12QW34ER at 05/01/2026 19:00",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "BKASH",
+      "messageType": "PAYMENT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  },
+  {
+    "id": "bkash-cash-in-agent",
+    "address": "bKash",
+    "body": "Cash In Tk 1,500.00 from 01759584276 successful. Fee Tk 0.00. Balance Tk 1,502.70. TrxID DA56RP7N7C at 05/01/2026 16:55. Download App: https://bKa.sh/8app",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "PARSED",
+      "provider": "BKASH",
+      "messageType": "CASH_IN",
+      "direction": "CREDIT",
+      "fields": {
+        "amount": "1500.00",
+        "senderMsisdn": "+8801759584276",
+        "fee": "0.00",
+        "balanceAfter": "1502.70",
+        "transactionId": "DA56RP7N7C",
+        "timestamp": "2026-01-05T10:55:00.000Z"
+      },
+      "confidence": 1,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "bkash-send-money-direct",
+    "address": "bKash",
+    "body": "You have received Tk 7,656.00 from 01615009792. Fee Tk 0.00. Balance Tk 7,656.00. TrxID CFR985O6SD at 27/06/2025 02:35",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "PARSED",
+      "provider": "BKASH",
+      "messageType": "SEND_MONEY",
+      "direction": "CREDIT",
+      "fields": {
+        "amount": "7656.00",
+        "senderMsisdn": "+8801615009792",
+        "fee": "0.00",
+        "balanceAfter": "7656.00",
+        "transactionId": "CFR985O6SD",
+        "timestamp": "2025-06-26T20:35:00.000Z"
+      },
+      "confidence": 1,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "bkash-send-money-integer-amount",
+    "address": "bKash",
+    "body": "You have received Tk 1250 from 01712345678. Fee Tk 0.00. Balance Tk 1250. TrxID AB12CD34EF at 27/07/2026 10:15",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "PARSED",
+      "provider": "BKASH",
+      "messageType": "SEND_MONEY",
+      "direction": "CREDIT",
+      "fields": {
+        "amount": "1250.00",
+        "senderMsisdn": "+8801712345678",
+        "fee": "0.00",
+        "balanceAfter": "1250.00",
+        "transactionId": "AB12CD34EF",
+        "timestamp": "2026-07-27T04:15:00.000Z"
+      },
+      "confidence": 1,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "bkash-cash-out-debit-ignored",
+    "address": "bKash",
+    "body": "Cash Out Tk 2,000.00 to 01700000000 successful. Fee Tk 18.50. Balance Tk 500.00. TrxID DZ99XYZ123 at 05/01/2026 17:10",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "BKASH",
+      "messageType": "CASH_OUT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  },
+  {
+    "id": "bkash-send-money-sent-debit-ignored",
+    "address": "bKash",
+    "body": "You have sent Tk 500.00 to 01800000000. Fee Tk 5.00. Balance Tk 1,000.00. TrxID DY88ABC456 at 05/01/2026 18:00",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "BKASH",
+      "messageType": "SEND_MONEY_SENT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  },
+  {
+    "id": "bkash-otp-promotional-unparsed",
+    "address": "bKash",
+    "body": "Your bKash OTP is 123456. Do not share it with anyone.",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "BKASH",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "non-provider-address-dropped",
+    "address": "FRIEND",
+    "body": "Cash In Tk 100.00 from 01700000000 successful. Fee Tk 0.00. Balance Tk 100.00. TrxID XX99YY88ZZ at 05/01/2026 16:55",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "UNKNOWN",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": null,
+      "unmatchedPatterns": []
+    }
+  },
+  {
+    "id": "nagad-cash-out-debit-ignored",
+    "address": "NAGAD",
+    "body": "Cash Out Tk 1,000.00 successful. Balance Tk 200.00. TxnID N123456789 at 05/01/2026 12:00",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "IGNORED",
+      "provider": "NAGAD",
+      "messageType": "CASH_OUT",
+      "direction": "DEBIT",
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": [],
+      "ignoredReason": "DEBIT_MESSAGE"
+    }
+  },
+  {
+    "id": "nagad-credit-provisional-unparsed",
+    "address": "NAGAD",
+    "body": "You have received Tk 500.00. Balance Tk 700.00. TxnID N987654321 at 05/01/2026 12:05",
+    "now": "2026-08-01T00:00:00.000Z",
+    "expected": {
+      "status": "UNPARSED",
+      "provider": "NAGAD",
+      "messageType": null,
+      "direction": null,
+      "fields": {},
+      "confidence": 0,
+      "ruleVersion": 1,
+      "unmatchedPatterns": []
+    }
+  }
+]

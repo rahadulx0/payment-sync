@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">পেমেন্ট-সিঙ্ক</string>
+
+    <string name="onb_welcome_title">আপনার বিকাশ পেমেন্ট স্বয়ংক্রিয়ভাবে নিশ্চিত করুন</string>
+    <string name="onb_welcome_body">এই অ্যাপটি শুধুমাত্র আপনার পেমেন্ট-নিশ্চিতকরণ এসএমএস পড়ে এবং আপনার ব্যবসার কাছে জানায়, যাতে পরিশোধিত অর্ডার স্বয়ংক্রিয়ভাবে পরিশোধিত হিসেবে চিহ্নিত হয়।</string>
+    <string name="onb_continue">এগিয়ে যান</string>
+
+    <string name="onb_rationale_title">এই অ্যাপটির কেন এসএমএস অ্যাক্সেস প্রয়োজন</string>
+    <string name="onb_rationale_body">এটি শুধুমাত্র বিকাশ, নগদ ও উপায়-এর বার্তা পড়ে। সেই বার্তাগুলোর পেমেন্ট তথ্য (পরিমাণ, ট্রানজেকশন আইডি, প্রেরক, সময়) আপনার ব্যবসার সার্ভারে পাঠায়। এটি আপনার অন্য কোনো এসএমএস কখনোই পড়ে না বা পাঠায় না। আপনি যেকোনো সময় সেটিংস থেকে এটি বন্ধ করতে পারেন।</string>
+    <string name="onb_consent_checkbox">আমি বুঝেছি এবং সম্মতি দিচ্ছি</string>
+    <string name="onb_privacy_policy">গোপনীয়তা নীতি পড়ুন</string>
+
+    <string name="onb_perm_title">এসএমএস অনুমতি দিন</string>
+    <string name="onb_perm_body">পেমেন্ট নিশ্চিতকরণ ধরার জন্য এসএমএস অ্যাক্সেস দিন। শুধুমাত্র প্রোভাইডারের বার্তা পড়া হয়।</string>
+    <string name="onb_grant">অনুমতি দিন</string>
+    <string name="onb_perm_denied">পেমেন্ট ধরার জন্য অনুমতি প্রয়োজন। অনুমতি দিতে সেটিংস খুলুন।</string>
+    <string name="onb_open_settings">সেটিংস খুলুন</string>
+
+    <string name="onb_enroll_title">এই ফোনটি আপনার ব্যবসার সাথে যুক্ত করুন</string>
+    <string name="company_code">কোম্পানি কোড</string>
+    <string name="enroll_key">এনরোলমেন্ট কী</string>
+    <string name="device_name">ডিভাইসের নাম (যেমন দোকান কাউন্টার)</string>
+    <string name="wallet_number">বিকাশ ওয়ালেট নম্বর (ঐচ্ছিক)</string>
+    <string name="enroll_button">সংযুক্ত করুন</string>
+
+    <string name="dashboard_title">পেমেন্ট-সিঙ্ক</string>
+    <string name="dashboard_pending">সিঙ্কের অপেক্ষায়</string>
+    <string name="dashboard_last">সর্বশেষ ধরা হয়েছে</string>
+    <string name="dashboard_none">এখনো কোনো পেমেন্ট ধরা হয়নি</string>
+
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_language">ভাষা</string>
+</resources>

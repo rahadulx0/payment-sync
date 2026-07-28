@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">payment-sync</string>
+
+    <string name="onb_welcome_title">Confirm your bKash payments automatically</string>
+    <string name="onb_welcome_body">This app reads only your payment-confirmation SMS and reports it to your business, so paid orders are marked paid without you doing anything.</string>
+    <string name="onb_continue">Continue</string>
+
+    <string name="onb_rationale_title">Why this app needs SMS access</string>
+    <string name="onb_rationale_body">It reads ONLY messages from bKash, Nagad and Upay. It sends the payment details (amount, transaction id, sender, time) of those messages to your business server. It NEVER reads or sends any of your other SMS. You can turn this off any time in Settings.</string>
+    <string name="onb_consent_checkbox">I understand and consent</string>
+    <string name="onb_privacy_policy">Read the privacy policy</string>
+
+    <string name="onb_perm_title">Allow SMS permission</string>
+    <string name="onb_perm_body">Grant SMS access so payment confirmations can be captured. Only provider messages are ever read.</string>
+    <string name="onb_grant">Grant permission</string>
+    <string name="onb_perm_denied">Permission is required to capture payments. Open settings to allow it.</string>
+    <string name="onb_open_settings">Open settings</string>
+
+    <string name="onb_enroll_title">Connect this phone to your business</string>
+    <string name="company_code">Company code</string>
+    <string name="enroll_key">Enrollment key</string>
+    <string name="device_name">Device name (e.g. Shop counter)</string>
+    <string name="wallet_number">bKash wallet number (optional)</string>
+    <string name="enroll_button">Connect</string>
+
+    <string name="dashboard_title">payment-sync</string>
+    <string name="dashboard_pending">Waiting to sync</string>
+    <string name="dashboard_last">Last captured</string>
+    <string name="dashboard_none">No payments captured yet</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+</resources>

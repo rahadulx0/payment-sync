@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base XML theme; the Compose Material3 theme is applied inside setContent. -->
+    <style name="Theme.PaymentSync" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
