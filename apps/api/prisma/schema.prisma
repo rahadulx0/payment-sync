@@ -149,6 +149,10 @@ model Company {
   webhook_secret_prev_enc   Bytes?
   webhook_secret_rotated_at DateTime?     @db.Timestamptz(3)
   default_callback_url      String?
+  webhook_breaker_state        String    @default("CLOSED") @db.VarChar(10)
+  webhook_consecutive_failures Int       @default(0)
+  webhook_last_success_at      DateTime? @db.Timestamptz(3)
+  webhook_breaker_opened_at    DateTime? @db.Timestamptz(3)
   notes                     String?
   created_at                DateTime      @default(now()) @db.Timestamptz(3)
   updated_at                DateTime      @updatedAt @db.Timestamptz(3)
@@ -396,6 +400,9 @@ model WebhookEvent {
   payment_request_id String?            @db.Uuid
   event_type         String             @db.VarChar(40)
   payload            Json
+  payload_raw        String?
+  callback_url       String?
+  reason             String?            @db.VarChar(40)
   status             WebhookEventStatus @default(PENDING)
   attempt_count      Int                @default(0)
   next_attempt_at    DateTime?          @db.Timestamptz(3)

@@ -1,12 +1,15 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { AppError } from '@paysync/shared';
+import { AppError, type WebhookTestResponse } from '@paysync/shared';
 import { IsOptional, IsString } from 'class-validator';
 
 import type { CompanyContext } from '../../common/auth/contexts.js';
 import { CurrentCompany, ServerAuth } from '../../common/auth/decorators.js';
 import { SafeUrlService } from '../../common/http/safe-url.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { ConfigService } from '../../config/config.service.js';
+
+import { DeliveryService } from './delivery/delivery.service.js';
 
 class WebhookTestDto {
   @IsOptional()
@@ -14,28 +17,38 @@ class WebhookTestDto {
   callback_url?: string;
 }
 
-// Shell for Task 07 — validates the callback and returns not_implemented.
-// Task 09 replaces the body with a real signed test.ping delivery.
+/**
+ * Synchronous single-attempt test delivery (Task 09 §4.6). Returns the status,
+ * latency, response excerpt, the exact signature header sent, and the expected
+ * `v1` — so a client can diff their own computation and self-diagnose a
+ * signature mismatch without a support ticket.
+ */
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class WebhookTestController {
   constructor(
+    private readonly delivery: DeliveryService,
     private readonly safeUrl: SafeUrlService,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
   ) {}
 
   @ServerAuth('payments:write')
   @Post('test')
-  async test(@Body() dto: WebhookTestDto, @CurrentCompany() ctx: CompanyContext | undefined) {
+  async test(
+    @Body() dto: WebhookTestDto,
+    @CurrentCompany() ctx: CompanyContext | undefined,
+  ): Promise<WebhookTestResponse> {
     if (ctx === undefined) throw new AppError('UNAUTHENTICATED', 'No company context.');
-    const companyRow = await this.prisma.company.findUniqueOrThrow({
-      where: { id: ctx.companyId },
-    });
-    const url = dto.callback_url ?? companyRow.default_callback_url;
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: ctx.companyId } });
+    const url = dto.callback_url ?? company.default_callback_url;
     if (url === null || url.length === 0) {
       throw new AppError('VALIDATION_ERROR', 'No callback_url provided or configured.');
     }
-    await this.safeUrl.validate(url);
-    return { delivered: false, reason: 'not_implemented', validated_url: url };
+    if (company.webhook_secret_enc === null) {
+      throw new AppError('VALIDATION_ERROR', 'No webhook secret set; rotate one first.');
+    }
+    if (!this.config.webhookInsecureAllowed) await this.safeUrl.validate(url);
+    return this.delivery.sendTestPing(company, url);
   }
 }

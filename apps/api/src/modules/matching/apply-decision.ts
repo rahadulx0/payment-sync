@@ -1,5 +1,7 @@
-import { Money, type WebhookVerifiedData } from '@paysync/shared';
+import { Money, uuidv7, type WebhookVerifiedData } from '@paysync/shared';
 import { Prisma } from '@prisma/client';
+
+import { buildEnvelope } from '../webhooks/signing/payload.js';
 
 import type { MatchDecision, SmsFacts } from './core/types.js';
 
@@ -91,18 +93,28 @@ async function applyVerified(
     was_late: decision.wasLate,
     metadata: (pr.metadata as Record<string, unknown> | null) ?? {},
   };
-  const event = await tx.webhookEvent.create({
+  // Freeze the signed body at creation (Task 09): the raw string is what every
+  // retry re-sends byte-for-byte. A SUSPENDED company (which still matches) has
+  // its event created but paused until reactivation.
+  const eventId = uuidv7();
+  const { envelope, raw } = buildEnvelope(eventId, 'payment.verified', now.toISOString(), data);
+  const paused = sms.companyStatus !== 'ACTIVE';
+  await tx.webhookEvent.create({
     data: {
+      id: eventId,
       company_id: companyId,
       payment_request_id: pr.id,
       event_type: 'payment.verified',
-      payload: data as unknown as Prisma.InputJsonValue,
+      payload: envelope as unknown as Prisma.InputJsonValue,
+      payload_raw: raw,
+      callback_url: pr.callback_url,
       status: 'PENDING',
-      next_attempt_at: now,
+      next_attempt_at: paused ? null : now,
+      paused,
     },
   });
 
-  return { createdWebhookEventIds: [event.id], verifiedAt: now };
+  return { createdWebhookEventIds: [eventId], verifiedAt: now };
 }
 
 async function applyReview(

@@ -81,8 +81,36 @@ export class MetricsService {
   });
   readonly webhookDeliveryLatency = new Histogram({
     name: 'webhook_delivery_latency_seconds',
-    help: 'verified_at to delivered_at',
+    help: 'Single-attempt request latency',
     buckets: [0.5, 1, 2, 5, 10, 30, 60],
+    registers: [this.registry],
+  });
+  readonly webhookTimeToDelivery = new Histogram({
+    name: 'webhook_time_to_delivery_seconds',
+    help: 'created_at to delivered_at — the number that matters to a merchant',
+    buckets: [1, 5, 15, 30, 60, 300, 900, 3600, 86400],
+    registers: [this.registry],
+  });
+  readonly webhookEvents = new Counter({
+    name: 'webhook_events_total',
+    help: 'Webhook events created',
+    labelNames: ['type'],
+    registers: [this.registry],
+  });
+  readonly webhookDead = new Counter({
+    name: 'webhook_dead_total',
+    help: 'Webhook events that exhausted their retry budget',
+    registers: [this.registry],
+  });
+  readonly webhookBreakerOpen = new Gauge({
+    name: 'webhook_breaker_open_gauge',
+    help: 'Companies with an open webhook circuit breaker',
+    labelNames: ['company'],
+    registers: [this.registry],
+  });
+  readonly webhookQueueDepth = new Gauge({
+    name: 'webhook_queue_depth',
+    help: 'PENDING webhook events due for delivery',
     registers: [this.registry],
   });
   readonly devicesOnline = new Gauge({

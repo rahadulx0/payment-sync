@@ -27,8 +27,18 @@ export class ConfigService {
   get db(): { url: string } {
     return { url: this.raw.DATABASE_URL };
   }
-  get redis(): { url: string } {
-    return { url: this.raw.REDIS_URL };
+  get redis(): { url: string; keyPrefix: string } {
+    return { url: this.raw.REDIS_URL, keyPrefix: this.redisKeyPrefix() };
+  }
+
+  /** Prod: honour REDIS_KEY_PREFIX (usually empty). Test: isolate by database name. */
+  private redisKeyPrefix(): string {
+    if (this.raw.REDIS_KEY_PREFIX.length > 0) return this.raw.REDIS_KEY_PREFIX;
+    if (this.raw.NODE_ENV === 'test') {
+      const db = this.raw.DATABASE_URL.split('/').pop() ?? 'test';
+      return `t:${db}:`;
+    }
+    return '';
   }
   get crypto(): { keyEncryptionKey: Buffer } {
     return { keyEncryptionKey: Buffer.from(this.raw.KEY_ENCRYPTION_KEY, 'base64') };
@@ -49,6 +59,9 @@ export class ConfigService {
   }
   get webhookUserAgent(): string {
     return this.raw.WEBHOOK_USER_AGENT;
+  }
+  get webhookInsecureAllowed(): boolean {
+    return this.raw.WEBHOOK_INSECURE_ALLOWED === 'true';
   }
   get metricsToken(): string {
     return this.raw.METRICS_TOKEN;

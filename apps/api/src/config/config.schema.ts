@@ -21,6 +21,10 @@ export const configSchema = z
 
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
+    // Optional keyspace prefix. Prod leaves it empty; the test harness derives a
+    // per-database prefix so parallel test processes sharing one Redis don't
+    // collide on rate-limit / idempotency / lock keys.
+    REDIS_KEY_PREFIX: z.string().default(''),
 
     KEY_ENCRYPTION_KEY: base64Key32,
     JWT_ACCESS_SECRET: z.string().min(16),
@@ -30,6 +34,9 @@ export const configSchema = z
     ADMIN_IP_ALLOWLIST: z.string().default(''),
     PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
     WEBHOOK_USER_AGENT: z.string().default('payment-sync-webhook/1.0'),
+    // Test-only escape hatch: permit http/loopback callbacks so integration
+    // tests can point at a local receiver. Never enable in production.
+    WEBHOOK_INSECURE_ALLOWED: z.string().default('false'),
     METRICS_TOKEN: z.string().default(''),
     RATE_LIMIT_REGISTER_RPM: z.coerce.number().int().positive().default(120),
   })

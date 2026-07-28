@@ -47,6 +47,8 @@ export default tseslint.config(
       '**/*.generated.ts',
       '**/.next/**',
       'apps/android/**',
+      // Hand-declared types for a docs reference snippet; not part of any tsconfig project.
+      'docs/webhook-verification/*.d.ts',
     ],
   },
   js.configs.recommended,

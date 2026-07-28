@@ -716,6 +716,93 @@ paths:
           description: ''
       tags:
         - webhooks
+  /admin/webhooks/events:
+    get:
+      operationId: WebhooksAdminController_listEvents
+      parameters:
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: type
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a8
+        - admin-webhooks
+  /admin/webhooks/events/{id}/deliveries:
+    get:
+      operationId: WebhooksAdminController_deliveries
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a8
+  /admin/webhooks/events/{id}/retry:
+    post:
+      operationId: WebhooksAdminController_retry
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *a8
+  /admin/webhooks/replay-dead:
+    post:
+      operationId: WebhooksAdminController_replayDead
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplayDeadDto'
+      responses:
+        '201':
+          description: ''
+      tags: *a8
+  /admin/webhooks/endpoint-health:
+    get:
+      operationId: WebhooksAdminController_endpointHealth
+      parameters:
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a8
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -723,7 +810,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a8
+      tags: &a9
         - Probe
   /probe/server:
     get:
@@ -732,7 +819,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a8
+      tags: *a9
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -740,7 +827,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a8
+      tags: *a9
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -748,7 +835,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a8
+      tags: *a9
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -756,7 +843,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a8
+      tags: *a9
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -764,7 +851,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a8
+      tags: *a9
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.
@@ -828,5 +915,8 @@ components:
       type: object
       properties: {}
     WebhookTestDto:
+      type: object
+      properties: {}
+    ReplayDeadDto:
       type: object
       properties: {}
