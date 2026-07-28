@@ -47,6 +47,10 @@ export default tseslint.config(
       '**/*.generated.ts',
       '**/.next/**',
       'apps/android/**',
+      // The admin app has its own Next/React toolchain and is typechecked via its
+      // own tsconfig (pnpm --filter @paysync/admin typecheck); the backend-tuned
+      // flat config here is not the right linter for it.
+      'apps/admin/**',
       // Hand-declared types for a docs reference snippet; not part of any tsconfig project.
       'docs/webhook-verification/*.d.ts',
     ],

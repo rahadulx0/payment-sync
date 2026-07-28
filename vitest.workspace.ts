@@ -12,7 +12,7 @@ export default defineWorkspace([
     test: {
       name: 'unit',
       root: '.',
-      include: ['packages/**/test/**/*.spec.ts'],
+      include: ['packages/**/test/**/*.spec.ts', 'apps/admin/test/unit/**/*.spec.ts'],
     },
   },
   {
