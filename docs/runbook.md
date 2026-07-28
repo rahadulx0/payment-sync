@@ -51,3 +51,22 @@ If credit SMS are piling up UNMATCHED for a company:
    also covers this every 15 minutes.
 3. If an order's TrxID was mistyped by the buyer, use `PATCH /payments/{order_id}/transaction-id`
    (ADR-14) rather than voiding anything.
+
+## Working the review queue
+
+Reviews (`GET /admin/reviews?status=OPEN`, oldest first) carry an `age_minutes` and the full scored
+candidate snapshot with per-signal `why` strings. Resolve each with `POST /admin/reviews/:id/resolve`:
+
+- **Link** (`{link_sms_log_id, link_payment_request_id, note}`) — verifies the SMS against the chosen
+  order via `MANUAL_ADMIN` and emits `payment.verified`. Re-validates the order state inside the
+  transaction, so it can never double-credit; resolving twice returns a conflict.
+- **Dismiss** (`{dismiss_reason, note}`) — closes the review; the SMS returns to `UNMATCHED` (still
+  re-matchable) or `IGNORED` if `not_a_payment: true`.
+
+`note` is mandatory and every resolution is audited. `GET /admin/reviews/stats` drives the dashboard
+tile and the P3 alert at >10 open. A review older than `review_sla_minutes` is a merchant with an
+unfulfilled paid order — treat the SLA breach as a real incident, not a backlog item.
+
+If a client reports a _wrong_ verification, set `heuristic_enabled = false` for them (10-second
+mitigation) while you investigate, and use the void-verification procedure above if a bad verification
+already went out.

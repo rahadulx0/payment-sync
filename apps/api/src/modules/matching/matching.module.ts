@@ -8,7 +8,7 @@ import { MATCHING_HOOK } from '../sms/matching.hook.js';
 import { InvariantsController } from './admin/invariants.controller.js';
 import { VoidVerificationController } from './admin/void-verification.controller.js';
 import { CandidateRepository } from './candidate.repository.js';
-import { NoopHeuristic } from './core/heuristic-port.js';
+import { HeuristicStrategy } from './heuristic/heuristic.strategy.js';
 import { HEURISTIC_PASS } from './heuristic.token.js';
 import { InvariantsService } from './invariants.service.js';
 import { RealMatchingHook, RealPaymentMatchingHook } from './matching.hooks.js';
@@ -34,7 +34,7 @@ import { TraceService } from './trace.service.js';
     RescanUnmatchedProcessor,
     RealMatchingHook,
     RealPaymentMatchingHook,
-    { provide: HEURISTIC_PASS, useClass: NoopHeuristic },
+    { provide: HEURISTIC_PASS, useClass: HeuristicStrategy },
     { provide: MATCHING_HOOK, useExisting: RealMatchingHook },
     { provide: PAYMENT_MATCHING_HOOK, useExisting: RealPaymentMatchingHook },
   ],

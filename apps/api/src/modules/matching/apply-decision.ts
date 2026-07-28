@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { buildEnvelope } from '../webhooks/signing/payload.js';
 
-import type { MatchDecision, SmsFacts } from './core/types.js';
+import type { MatchDecision, MatchSettings, SmsFacts } from './core/types.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -28,12 +28,13 @@ export async function applyDecision(
   sms: SmsFacts,
   companyId: string,
   now: Date,
+  settings: MatchSettings,
 ): Promise<ApplyResult> {
   switch (decision.result) {
     case 'VERIFIED':
       return applyVerified(tx, decision, sms, companyId, now);
     case 'REVIEW':
-      return applyReview(tx, decision, sms, companyId);
+      return applyReview(tx, decision, sms, companyId, now, settings);
     case 'DUPLICATE':
       return applyDuplicate(tx, decision, sms, companyId);
     case 'IGNORED':
@@ -122,16 +123,69 @@ async function applyReview(
   decision: Extract<MatchDecision, { result: 'REVIEW' }>,
   sms: SmsFacts,
   companyId: string,
+  now: Date,
+  settings: MatchSettings,
 ): Promise<ApplyResult> {
+  const single = decision.candidates.length === 1 ? decision.candidates[0] : undefined;
   await insertReview(tx, {
     company_id: companyId,
     sms_log_id: sms.smsLogId,
-    payment_request_id: decision.candidates[0]?.paymentRequestId ?? null,
+    payment_request_id: single?.paymentRequestId ?? null,
     reason: decision.reason,
     candidates: decision.candidates as unknown as Prisma.InputJsonValue,
   });
   await setSmsStatus(tx, sms.smsLogId, 'IN_REVIEW');
-  return { createdWebhookEventIds: [], verifiedAt: null };
+
+  // Notify the client only when the review names one unambiguous order.
+  const created: string[] = [];
+  if (settings.notifyOnReview && single !== undefined) {
+    const eventId = await emitReviewRequired(
+      tx,
+      companyId,
+      single.paymentRequestId,
+      decision.reason,
+      now,
+      sms.companyStatus,
+    );
+    if (eventId !== null) created.push(eventId);
+  }
+  return { createdWebhookEventIds: created, verifiedAt: null };
+}
+
+async function emitReviewRequired(
+  tx: Tx,
+  companyId: string,
+  paymentRequestId: string,
+  reason: string,
+  now: Date,
+  companyStatus: SmsFacts['companyStatus'],
+): Promise<string | null> {
+  const pr = await tx.paymentRequest.findUnique({ where: { id: paymentRequestId } });
+  if (pr === null) return null;
+  const eventId = uuidv7();
+  const { envelope, raw } = buildEnvelope(eventId, 'payment.review_required', now.toISOString(), {
+    status: 'MANUAL_REVIEW',
+    order_id: pr.order_id,
+    payment_request_id: pr.id,
+    reason,
+    amount: Money.fromPrismaDecimal(pr.expected_amount).toDecimalString(),
+  });
+  const paused = companyStatus !== 'ACTIVE';
+  await tx.webhookEvent.create({
+    data: {
+      id: eventId,
+      company_id: companyId,
+      payment_request_id: pr.id,
+      event_type: 'payment.review_required',
+      payload: envelope as unknown as Prisma.InputJsonValue,
+      payload_raw: raw,
+      callback_url: pr.callback_url,
+      status: 'PENDING',
+      next_attempt_at: paused ? null : now,
+      paused,
+    },
+  });
+  return eventId;
 }
 
 async function applyDuplicate(

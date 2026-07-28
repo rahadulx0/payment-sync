@@ -12,6 +12,7 @@ import { RedisModule } from './common/redis/redis.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { AuditModule } from './modules/admin/audit/audit.module.js';
 import { AdminAuthModule } from './modules/admin/auth/admin-auth.module.js';
+import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { CompaniesModule } from './modules/companies/companies.module.js';
 import { CredentialsModule } from './modules/credentials/credentials.module.js';
 import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module.js';
@@ -21,6 +22,7 @@ import { MatchingModule } from './modules/matching/matching.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
+import { ReviewsModule } from './modules/reviews/reviews.module.js';
 import { SmsModule } from './modules/sms/sms.module.js';
 import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
 
@@ -46,6 +48,8 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
     SmsModule,
     PaymentsModule,
     WebhooksModule,
+    ReviewsModule,
+    AnalyticsModule,
     HealthModule,
     ProbeModule,
   ],

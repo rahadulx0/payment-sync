@@ -67,6 +67,35 @@ export class MetricsService {
     labelNames: ['company'],
     registers: [this.registry],
   });
+  readonly heuristicDecisions = new Counter({
+    name: 'heuristic_decisions_total',
+    help: 'Heuristic-pass decisions by result',
+    labelNames: ['result'],
+    registers: [this.registry],
+  });
+  readonly heuristicScore = new Histogram({
+    name: 'heuristic_score_histogram',
+    help: 'Top heuristic candidate score',
+    buckets: [0.1, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95, 1],
+    registers: [this.registry],
+  });
+  readonly heuristicCandidateCapHit = new Counter({
+    name: 'heuristic_candidate_cap_hit_total',
+    help: 'Heuristic candidate query hit its 50-row cap (window/tolerance too loose)',
+    registers: [this.registry],
+  });
+  readonly reviewsResolved = new Counter({
+    name: 'reviews_resolved_total',
+    help: 'Reviews resolved by resolution type',
+    labelNames: ['resolution'],
+    registers: [this.registry],
+  });
+  readonly reviewsOpen = new Gauge({
+    name: 'reviews_open_gauge',
+    help: 'Open reviews by reason',
+    labelNames: ['reason'],
+    registers: [this.registry],
+  });
   readonly webhookAttempts = new Counter({
     name: 'webhook_attempts_total',
     help: 'Webhook delivery attempts',

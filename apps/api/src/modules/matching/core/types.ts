@@ -37,6 +37,7 @@ export interface OrderFacts {
   tolerance: Money;
   status: PaymentStatusValue;
   expiresAt: Date;
+  createdAt: Date;
   matchMode: 'EXACT' | 'HEURISTIC';
   expectedProvider: string | null;
   expectedSenderMsisdn: string | null;
@@ -49,11 +50,15 @@ export interface MatchSettings {
   heuristicEnabled: boolean;
   heuristicWindowMinutes: number;
   requireSenderMatch: boolean;
+  autoVerifyMinConfidence: number;
 }
 
 export interface MatchInput {
   sms: SmsFacts;
+  /** Exact-pass candidates: PENDING/EXPIRED orders sharing the SMS TrxID. */
   candidates: OrderFacts[];
+  /** Heuristic-pass candidates: PENDING, transaction_id IS NULL, amount+window+sender (Task 10). */
+  heuristicCandidates: OrderFacts[];
   settings: MatchSettings;
   /** TrxIDs already consumed by a verified_transaction for this company. */
   spentTrxIds: Set<string>;
@@ -83,6 +88,9 @@ export interface ScoredCandidate {
   receivedAmount: string;
   amountDelta: string;
   note: string;
+  score?: number;
+  signals?: Record<string, number>;
+  why?: string[];
 }
 
 export type MatchDecision =

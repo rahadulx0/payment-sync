@@ -43,10 +43,12 @@ export function exactPass(input: MatchInput): MatchDecision | null {
   const eligible = withTrx.filter((c) => isEligible(c, now, settings.lateMatchGraceHours));
 
   if (eligible.length === 0) {
-    // No live order for this TrxID. If some verification already consumed it,
-    // this is a duplicate credit SMS (or a replay); otherwise wait for a register.
+    // A TrxID already consumed by a verification → duplicate credit SMS / replay.
     if (spentTrxIds.has(trxId)) return { result: 'DUPLICATE', trxId };
-    return { result: 'UNMATCHED' };
+    // Otherwise fall through (null) to the heuristic pass: the customer may have
+    // mistyped the TrxID on the wrong order, and an amount+window match — flagged
+    // VERIFIED_HEURISTIC_DESPITE_TRXID — is still worth surfacing (§4.3).
+    return null;
   }
 
   // A well-formed system has at most one live order per TrxID (partial unique

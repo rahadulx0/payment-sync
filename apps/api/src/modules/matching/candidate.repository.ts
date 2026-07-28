@@ -14,6 +14,7 @@ interface OrderRow {
   amount_tolerance: string;
   status: string;
   expires_at: Date;
+  created_at: Date;
   match_mode: string;
   expected_provider: string | null;
   expected_sender_msisdn: string | null;
@@ -68,7 +69,7 @@ export class CandidateRepository {
       SELECT id, order_id, transaction_id,
              expected_amount::text AS expected_amount,
              amount_tolerance::text AS amount_tolerance,
-             status::text AS status, expires_at,
+             status::text AS status, expires_at, created_at,
              match_mode::text AS match_mode,
              expected_provider::text AS expected_provider,
              expected_sender_msisdn
@@ -76,6 +77,47 @@ export class CandidateRepository {
        WHERE company_id = ${companyId}::uuid
          AND transaction_id = ${trxId}
          AND status IN ('PENDING', 'EXPIRED')
+       FOR UPDATE`;
+    return rows.map((r) => this.toOrderFacts(r));
+  }
+
+  /**
+   * Heuristic candidates (architecture §9.2): PENDING, EXACT-mode excluded
+   * (`transaction_id IS NULL` is load-bearing — a mistyped TrxID must never
+   * consume someone else's payment), amount within tolerance, SMS time inside
+   * [created_at − 5m, created_at + window], provider/sender constrained.
+   */
+  async loadHeuristicCandidates(
+    tx: Tx,
+    companyId: string,
+    q: {
+      amount: string;
+      smsTime: Date;
+      provider: string;
+      sender: string | null;
+      windowMinutes: number;
+      requireSender: boolean;
+    },
+  ): Promise<OrderFacts[]> {
+    const rows = await tx.$queryRaw<OrderRow[]>`
+      SELECT id, order_id, transaction_id,
+             expected_amount::text AS expected_amount,
+             amount_tolerance::text AS amount_tolerance,
+             status::text AS status, expires_at, created_at,
+             match_mode::text AS match_mode,
+             expected_provider::text AS expected_provider,
+             expected_sender_msisdn
+        FROM payment_requests
+       WHERE company_id = ${companyId}::uuid
+         AND status = 'PENDING'
+         AND transaction_id IS NULL
+         AND ABS(expected_amount - ${q.amount}::numeric) <= amount_tolerance
+         AND ${q.smsTime} BETWEEN created_at - INTERVAL '5 minutes'
+                              AND created_at + make_interval(mins => ${q.windowMinutes}::int)
+         AND (expected_provider IS NULL OR expected_provider = ${q.provider}::"Provider")
+         AND (${q.requireSender} = false OR expected_sender_msisdn = ${q.sender})
+       ORDER BY created_at DESC
+       LIMIT 50
        FOR UPDATE`;
     return rows.map((r) => this.toOrderFacts(r));
   }
@@ -99,6 +141,7 @@ export class CandidateRepository {
     heuristic_enabled: boolean;
     heuristic_window_minutes: number;
     require_sender_match: boolean;
+    auto_verify_min_confidence: { toString(): string };
   }): MatchSettings {
     return {
       allowedProviders: s.allowed_providers,
@@ -107,6 +150,7 @@ export class CandidateRepository {
       heuristicEnabled: s.heuristic_enabled,
       heuristicWindowMinutes: s.heuristic_window_minutes,
       requireSenderMatch: s.require_sender_match,
+      autoVerifyMinConfidence: Number(s.auto_verify_min_confidence.toString()),
     };
   }
 
@@ -119,6 +163,7 @@ export class CandidateRepository {
       tolerance: Money.fromPrismaDecimal(r.amount_tolerance),
       status: r.status as OrderFacts['status'],
       expiresAt: r.expires_at,
+      createdAt: r.created_at,
       matchMode: r.match_mode as OrderFacts['matchMode'],
       expectedProvider: r.expected_provider,
       expectedSenderMsisdn: r.expected_sender_msisdn,

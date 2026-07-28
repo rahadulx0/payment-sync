@@ -20,6 +20,7 @@ function settings(over: Partial<MatchSettings> = {}): MatchSettings {
     heuristicEnabled: true,
     heuristicWindowMinutes: 30,
     requireSenderMatch: false,
+    autoVerifyMinConfidence: 0.9,
     ...over,
   };
 }
@@ -49,6 +50,7 @@ function order(over: Partial<OrderFacts> = {}): OrderFacts {
     tolerance: Money.fromDecimalString('0.00'),
     status: 'PENDING',
     expiresAt: FUTURE,
+    createdAt: NOW,
     matchMode: 'EXACT',
     expectedProvider: 'BKASH',
     expectedSenderMsisdn: null,
@@ -60,6 +62,7 @@ function input(over: Partial<MatchInput> = {}): MatchInput {
   return {
     sms: sms(),
     candidates: [order()],
+    heuristicCandidates: [],
     settings: settings(),
     spentTrxIds: new Set<string>(),
     now: NOW,

@@ -80,3 +80,29 @@ manual syncs collapses to one rescan rather than stacking dozens.
 `match_decisions_total{result,pass}`, `matching_duration_seconds`, `verification_latency_seconds`
 (sms_timestamp → verified_at), `matching_conflicts_total`, `matching_lock_wait_seconds`,
 `duplicate_txn_total`, `unmatched_sms_gauge{company}`, `invariant_violations_total{check}`.
+
+## The heuristic pass (Task 10)
+
+When an SMS has no exact TrxID match, the second pass scores every candidate order
+(PENDING, `transaction_id IS NULL`, amount within tolerance, SMS time inside
+`[created_at − 5m, created_at + window]`, provider/sender constrained) and decides:
+
+```
+score = 0.45·amount + 0.30·sender + 0.15·time + 0.10·provider − 0.30·collision − 0.10·roundAmount
+1 candidate:  score ≥ auto_verify_min_confidence → VERIFIED, else REVIEW
+>1 candidate: top ≥ threshold AND (top − runnerUp) ≥ 0.25 → VERIFIED, else REVIEW
+```
+
+- **`transaction_id IS NULL` is load-bearing**: an exact-mode order is never heuristically verified.
+- The **collision penalty** only counts _sender-compatible_ rivals — a same-amount order registered to
+  a different sender is ruled out, which is exactly how a sender disambiguates two 500-BDT payers.
+- An SMS carrying a TrxID that found no exact match may still verify heuristically, flagged
+  `VERIFIED_HEURISTIC_DESPITE_TRXID` (usually a customer who mistyped the TrxID).
+- Hitting the 50-candidate query cap → REVIEW (never an arbitrary pick) + `heuristic_candidate_cap_hit_total`.
+
+### Tuning per client
+
+Default `auto_verify_min_confidence = 0.90` means amount + tight window alone is usually _not_ enough
+without a sender match — that is intentional. Rather than lowering it (which raises false-verify risk),
+get the client to send `sender_msisdn` (or a TrxID) at checkout: a one-field change that eliminates the
+ambiguity at the source. `heuristic_enabled = false` is a per-tenant kill switch for incident response.

@@ -8,7 +8,8 @@ import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { applyDecision, type ApplyResult } from './apply-decision.js';
 import { CandidateRepository } from './candidate.repository.js';
 import { decide } from './core/decide.js';
-import type { MatchDecision, MatchSettings, SmsFacts } from './core/types.js';
+import type { MatchDecision, MatchSettings, OrderFacts, SmsFacts } from './core/types.js';
+import { HEURISTIC_CANDIDATE_CAP } from './heuristic/heuristic.strategy.js';
 import { HEURISTIC_PASS, type HeuristicPassProvider } from './heuristic.token.js';
 import { TraceService } from './trace.service.js';
 
@@ -104,24 +105,47 @@ export class MatchingService {
     try {
       captured = await this.prisma.$transaction(
         async (tx) => {
-          const order = await tx.paymentRequest.findUnique({ where: { id: paymentRequestId } });
-          if (
-            order === null ||
-            order.match_mode !== 'EXACT' ||
-            order.transaction_id === null ||
-            (order.status !== 'PENDING' && order.status !== 'EXPIRED')
-          ) {
+          const order = await tx.paymentRequest.findUnique({
+            where: { id: paymentRequestId },
+            include: { company: { include: { settings: true } } },
+          });
+          if (order === null || (order.status !== 'PENDING' && order.status !== 'EXPIRED')) {
             return null;
           }
           await this.lock(tx, order.company_id);
-          const smsRows = await tx.$queryRaw<{ id: string }[]>`
-            SELECT id FROM sms_logs
-             WHERE company_id = ${order.company_id}::uuid
-               AND transaction_id = ${order.transaction_id}
-               AND match_status = 'UNMATCHED'
-             ORDER BY sms_timestamp ASC NULLS LAST
-             LIMIT ${REVERSE_CANDIDATE_LIMIT}
-             FOR UPDATE`;
+
+          // Exact orders reverse-match by TrxID; heuristic orders by amount+window
+          // over UNMATCHED credit SMS (architecture §7.3 / Task 10 §4.4).
+          let smsRows: { id: string }[];
+          if (order.match_mode === 'EXACT' && order.transaction_id !== null) {
+            smsRows = await tx.$queryRaw<{ id: string }[]>`
+              SELECT id FROM sms_logs
+               WHERE company_id = ${order.company_id}::uuid
+                 AND transaction_id = ${order.transaction_id}
+                 AND match_status = 'UNMATCHED'
+               ORDER BY sms_timestamp ASC NULLS LAST
+               LIMIT ${REVERSE_CANDIDATE_LIMIT}
+               FOR UPDATE`;
+          } else if (
+            order.match_mode === 'HEURISTIC' &&
+            order.company.settings?.heuristic_enabled === true
+          ) {
+            const windowMinutes = order.company.settings.heuristic_window_minutes;
+            smsRows = await tx.$queryRaw<{ id: string }[]>`
+              SELECT id FROM sms_logs
+               WHERE company_id = ${order.company_id}::uuid
+                 AND match_status = 'UNMATCHED'
+                 AND amount IS NOT NULL
+                 AND parse_status IN ('PARSED', 'PARTIAL')
+                 AND ABS(amount - ${order.expected_amount}) <= ${order.amount_tolerance}
+                 AND sms_timestamp BETWEEN ${order.created_at} - make_interval(mins => ${windowMinutes}::int)
+                                       AND ${order.created_at} + INTERVAL '5 minutes'
+               ORDER BY sms_timestamp DESC NULLS LAST
+               LIMIT ${REVERSE_CANDIDATE_LIMIT}
+               FOR UPDATE`;
+          } else {
+            return null;
+          }
           for (const row of smsRows) {
             const outcome = await this.decideAndApply(tx, row.id, trigger, now);
             if (outcome !== null && outcome.decision.result === 'VERIFIED') return outcome;
@@ -184,8 +208,31 @@ export class MatchingService {
       if (spentId !== null) spent.add(sms.trxId);
     }
 
-    const decision = decide({ sms, candidates, settings, spentTrxIds: spent, now }, this.heuristic);
-    const applied = await applyDecision(tx, decision, sms, companyId, now);
+    let heuristicCandidates: OrderFacts[] = [];
+    if (sms.amount !== null && settings.heuristicEnabled && sms.direction === 'CREDIT') {
+      heuristicCandidates = await this.candidates.loadHeuristicCandidates(tx, companyId, {
+        amount: sms.amount.toDecimalString(),
+        smsTime: sms.smsAt ?? now,
+        provider: sms.provider,
+        sender: sms.senderMsisdn,
+        windowMinutes: settings.heuristicWindowMinutes,
+        requireSender: settings.requireSenderMatch,
+      });
+      if (heuristicCandidates.length >= HEURISTIC_CANDIDATE_CAP)
+        this.metrics.heuristicCandidateCapHit.inc();
+    }
+
+    const decision = decide(
+      { sms, candidates, heuristicCandidates, settings, spentTrxIds: spent, now },
+      this.heuristic,
+    );
+    const applied = await applyDecision(tx, decision, sms, companyId, now, settings);
+    if (decision.result === 'VERIFIED' && decision.pass === 'HEURISTIC') {
+      this.metrics.heuristicDecisions.inc({ result: 'VERIFIED' });
+      this.metrics.heuristicScore.observe(decision.confidence);
+    } else if (decision.result === 'REVIEW' && heuristicCandidates.length > 0) {
+      this.metrics.heuristicDecisions.inc({ result: 'REVIEW' });
+    }
     const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
 
     await this.trace.record(tx, {
