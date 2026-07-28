@@ -8,9 +8,13 @@ import { Providers } from '../../components/providers';
 import { apiRequest } from '../../lib/api-client';
 import { authToken } from '../../lib/auth-store';
 
-// Task 11 scope; Task 12 adds Transactions / Reviews / Webhooks / Analytics.
 const NAV = [
   { href: '/dashboard', label: 'Overview' },
+  { href: '/transactions', label: 'Transactions' },
+  { href: '/reviews', label: 'Reviews' },
+  { href: '/webhooks', label: 'Webhooks' },
+  { href: '/parsers', label: 'Parsers' },
+  { href: '/analytics', label: 'Analytics' },
   { href: '/companies', label: 'Companies' },
   { href: '/devices', label: 'Devices' },
   { href: '/audit', label: 'Audit log' },

@@ -54,3 +54,39 @@ see the detail. Use the `request_id` shown in error toasts when raising a suppor
 - The **environment badge** (top-left) is coloured — red `PRODUCTION`, amber `STAGING`. The same person
   operates both; check it before any destructive action.
 - Everything the form validates is also validated server-side; the UI mirrors _bounds_, never _logic_.
+
+## Operations screens (Task 12)
+
+**Overview** opens with an **alert strip** — only what needs action (invariant violations, dead
+webhooks, open reviews, unmatched SMS), each linking to the fix. When healthy it shows a single quiet
+"all clear" with the `as_of` time.
+
+### The 60-second diagnosis ("customer paid, order still pending")
+
+1. **Transactions → search** the TrxID, MSISDN, order id, or a phrase from the SMS.
+2. Open the SMS row to the **decision-trace** screen: raw message (left), server extraction (middle),
+   and the `match_attempts` trace (right). The trace states the cause in plain language — e.g.
+   "Ignored: this is an outgoing payment (Cash Out), not an incoming one", or the ranked candidate
+   orders with their score breakdown and `why` lines for an ambiguous review.
+3. Act from that screen: **Re-parse** (shows a diff, may trigger a rescan), or resolve via the
+   **Review queue**.
+
+### Review queue
+
+Oldest first; a review past its SLA is shown in red. Open one to see the SMS beside the ranked
+candidate orders (amount/Δ, score, `why`). **Link this order** verifies it (`MANUAL_ADMIN`, emits a
+webhook); **Dismiss** returns the SMS to the pool. Both require a note and are audited; a conflicting
+resolve (order changed in another tab) surfaces the conflict rather than double-crediting.
+
+### Webhooks
+
+Filter to `DEAD`/`FAILED`; open an event to see every delivery attempt with status, latency, and the
+response excerpt. **Retry now** appends a fresh attempt (never resets the history). Endpoint health and
+the circuit-breaker state live under the company.
+
+### Parsers & Analytics
+
+**Parsers** shows the parse-status distribution and the unparsed queue grouped by shape — the
+parser-improvement workflow (see a shape → add a fixture → ship a rule). **Analytics** charts verified
+volume, provider split, and verification methods, each with a CSV export of the underlying rows
+(Excel-safe, amounts as text).

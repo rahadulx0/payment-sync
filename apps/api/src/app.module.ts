@@ -19,6 +19,7 @@ import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module
 import { DevicesModule } from './modules/devices/devices.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
+import { OpsModule } from './modules/ops/ops.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
@@ -50,6 +51,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
     WebhooksModule,
     ReviewsModule,
     AnalyticsModule,
+    OpsModule,
     HealthModule,
     ProbeModule,
   ],

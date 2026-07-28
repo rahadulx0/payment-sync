@@ -1,4 +1,5 @@
 'use client';
+import { AlertStrip } from '../../../components/ops/alert-strip';
 import { Card } from '../../../components/ui';
 import { Money, PageHeader } from '../../../components/primitives';
 import { useApiQuery } from '../../../lib/hooks';
@@ -28,6 +29,7 @@ export default function OverviewPage() {
   return (
     <div>
       <PageHeader title="Overview" subtitle="Platform health at a glance (last 30 days)" />
+      <AlertStrip />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Stat label="Verified" value={data?.verified ?? '—'} />
         <Stat

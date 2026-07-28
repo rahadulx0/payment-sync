@@ -951,6 +951,109 @@ paths:
         '200':
           description: ''
       tags: *a10
+  /admin/ops/sms-logs:
+    get:
+      operationId: OpsController_listSms
+      parameters:
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: provider
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: parse_status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: match_status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &a11
+        - admin-ops
+  /admin/ops/sms-logs/{id}:
+    get:
+      operationId: OpsController_smsDetail
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a11
+  /admin/ops/orders:
+    get:
+      operationId: OpsController_listOrders
+      parameters:
+        - name: company_id
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: status
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a11
+  /admin/ops/orders/{id}:
+    get:
+      operationId: OpsController_orderDetail
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *a11
   /probe/device:
     get:
       operationId: ProbeController_whoamiDevice
@@ -958,7 +1061,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: &a11
+      tags: &a12
         - Probe
   /probe/server:
     get:
@@ -967,7 +1070,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a11
+      tags: *a12
   /probe/admin:
     get:
       operationId: ProbeController_whoamiAdmin
@@ -975,7 +1078,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a11
+      tags: *a12
   /probe/undecorated:
     get:
       operationId: ProbeController_undecorated
@@ -983,7 +1086,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a11
+      tags: *a12
   /probe/rate-limited:
     get:
       operationId: ProbeController_rateLimited
@@ -991,7 +1094,7 @@ paths:
       responses:
         '200':
           description: ''
-      tags: *a11
+      tags: *a12
   /probe/idempotent:
     post:
       operationId: ProbeController_idempotent
@@ -999,7 +1102,7 @@ paths:
       responses:
         '201':
           description: ''
-      tags: *a11
+      tags: *a12
 info:
   title: payment-sync API
   description: Device, client and admin API for the payment-verification platform.
