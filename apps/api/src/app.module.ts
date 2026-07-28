@@ -17,6 +17,7 @@ import { CredentialsModule } from './modules/credentials/credentials.module.js';
 import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module.js';
 import { DevicesModule } from './modules/devices/devices.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { MatchingModule } from './modules/matching/matching.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ProbeModule } from './modules/probe/probe.module.js';
@@ -40,6 +41,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
     CredentialsModule,
     DevicesAdminModule,
     ParsingModule,
+    MatchingModule,
     DevicesModule,
     SmsModule,
     PaymentsModule,

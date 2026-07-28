@@ -155,7 +155,7 @@ Update the status column in this table as part of each task's PR.
 | 05 | SMS Parsing Subsystem | ☑ Done | main | data-driven rules + normalizers + pure reference parser; bKash Cash In & Send Money as exact fixtures (debits IGNORED); server ParserService + RuleRepository (redis-invalidated) + reparse/health admin; 180 tests |
 | 06 | Device API & SMS Ingestion | ☑ Done | main | device register/heartbeat+directives/config(ETag)/token-rotate/events; sms/upload batch pipeline: dedupe (client+content+batch), server parse, matching-hook stub; 8 e2e (188 tests) |
 | 07 | Client Payments API | ☑ Done | main | POST/GET/list/cancel payments, register (EXACT/HEURISTIC, idempotent, dup order/TrxID → 409, rate-limited); ADR-14 PATCH transaction-id correction (PENDING/expired-in-grace, re-match hook); SSRF SafeUrl guard; expiry sweep; webhook-test shell; 18 e2e (206 tests) |
-| 08 | Matching Engine — Exact | ☐ Not started | | |
+| 08 | Matching Engine — Exact | ☑ Done | main | pure decision core (guards→future→exact→heuristic port) + property tests; transactional runner w/ per-company advisory lock, FOR UPDATE candidates, conflict reconcile; forward + reverse (register/correction) hooks wired real; late-match in grace, duplicate-TrxID→review, decision trace per attempt; rescan (redis-deduped) + invariant job + void endpoint; 36 new tests (242 total) |
 | 09 | Webhook Delivery | ☐ Not started | | |
 | 10 | Heuristic Matching & Reviews | ☐ Not started | | |
 | 11 | Admin Dashboard I | ☐ Not started | | |

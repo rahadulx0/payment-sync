@@ -510,6 +510,35 @@ paths:
         '201':
           description: ''
       tags: *a5
+  /admin/verified/{id}/void:
+    post:
+      operationId: VoidVerificationController_void
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidVerificationDto'
+      responses:
+        '201':
+          description: ''
+      tags:
+        - admin-verified
+  /admin/invariants:
+    get:
+      operationId: InvariantsController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - admin-invariants
   /device/register:
     post:
       operationId: DevicesController_register
@@ -775,6 +804,9 @@ components:
       type: object
       properties: {}
     PatchDeviceDto:
+      type: object
+      properties: {}
+    VoidVerificationDto:
       type: object
       properties: {}
     DeviceRegisterDto:
