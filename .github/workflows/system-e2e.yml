@@ -1,0 +1,53 @@
+name: system-e2e
+
+on:
+  schedule:
+    - cron: '0 20 * * *' # 02:00 Asia/Dhaka, nightly
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+
+jobs:
+  system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @paysync/api exec prisma generate
+
+      # The suite runs against a real Postgres + Redis (embedded PG in the test
+      # harness; Redis as a service) — never mocks, because the guarantees being
+      # asserted are database guarantees.
+      - name: System journeys + full suite
+        run: pnpm test
+        env:
+          REDIS_URL: redis://localhost:6379
+
+      - name: OpenAPI drift
+        run: |
+          pnpm --filter @paysync/api openapi:generate
+          git diff --exit-code docs/openapi.yaml
+
+      - name: Parser artifact drift (server ↔ Android)
+        run: |
+          pnpm --filter @paysync/parsers export:android
+          git diff --exit-code apps/android/app/src/main/assets apps/android/app/src/test/resources
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5

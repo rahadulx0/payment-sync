@@ -28,3 +28,23 @@ Always log `request_id` — it ties your report to our logs.
 | `RATE_LIMITED`             | 429  | Too many requests                               | Honour `Retry-After`                                                            |
 | `PAYLOAD_TOO_LARGE`        | 413  | Body exceeds the limit                          | Reduce payload (batch ≤ 50, `metadata` ≤ 4 KB)                                  |
 | `INTERNAL_ERROR`           | 500  | Unexpected server error                         | Retry with backoff; report `request_id`                                         |
+
+## Rules that surprise people
+
+These three cause most integration questions:
+
+- **A duplicate SMS upload is a success, not an error.** Re-uploading a message the server already has
+  returns 2xx with the existing `sms_log_id`. If duplicates were errors, the phone's retry loop would
+  never settle.
+- **Re-registering an identical order is safe.** Same `order_id` + same amount + same TrxID returns
+  `200` with the existing order. Only a _changed_ payload conflicts with `DUPLICATE_ORDER_ID`.
+- **Another tenant's order returns `404`, never `403`.** The API does not confirm that an object exists
+  in someone else's account.
+
+## Which errors are worth retrying
+
+| Retry                                                                                         | Do not retry                                                                                                                              |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `RATE_LIMITED` (honour `Retry-After`), `REQUEST_IN_PROGRESS`, `INTERNAL_ERROR` (with backoff) | `VALIDATION_ERROR`, `INVALID_CALLBACK_URL`, `PAYLOAD_TOO_LARGE`, `DUPLICATE_*`, `UNAUTHENTICATED`, `FORBIDDEN_SCOPE`, `COMPANY_SUSPENDED` |
+
+Retrying a non-retryable error unchanged will fail identically — fix the request or the credential instead.

@@ -51,6 +51,8 @@ export default tseslint.config(
       // own tsconfig (pnpm --filter @paysync/admin typecheck); the backend-tuned
       // flat config here is not the right linter for it.
       'apps/admin/**',
+      // k6 load scripts run in the k6 runtime (its own globals), not Node.
+      'test/load/**',
       // Hand-declared types for a docs reference snippet; not part of any tsconfig project.
       'docs/webhook-verification/*.d.ts',
     ],
