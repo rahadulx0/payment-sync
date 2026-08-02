@@ -70,3 +70,41 @@ unfulfilled paid order — treat the SLA breach as a real incident, not a backlo
 If a client reports a _wrong_ verification, set `heuristic_enabled = false` for them (10-second
 mitigation) while you investigate, and use the void-verification procedure above if a bad verification
 already went out.
+
+## Android keystore custody (highest-consequence artifact)
+
+The release keystore signs every APK. **If it is lost, no merchant can ever install an update again** —
+a differently-signed APK will not upgrade an existing install; every phone would need a manual uninstall
+(losing un-uploaded messages) and re-enrollment.
+
+- Generated **once**. Stored offline in **two** separate physical locations, plus base64 in CI secrets
+  (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`).
+- Record the custody locations and who holds them. Verify the backups restore, once, on purpose.
+- The release build reads signing from env and **fails loudly** if it is missing, rather than silently
+  falling back to a debug key (which would produce an APK that cannot upgrade anything).
+- `mapping.txt` is archived per release by CI — without it a crash report from a minified build is
+  unreadable.
+
+## Certificate pin rotation (the pinning trap)
+
+Pins are on the **intermediate CA**, never the leaf (pinning a leaf guarantees an outage at renewal),
+and a **backup pin** always ships alongside the primary.
+
+Order of operations — getting this backwards takes every device offline:
+
+1. Ship an app release containing the **new** pin (as the backup) **before** the certificate changes.
+2. Wait until the fleet has updated (watch the heartbeat version spread in the dashboard).
+3. Only then rotate the certificate.
+4. In the next release, drop the retired pin.
+
+**If devices can no longer connect:** publish a rescue APK with corrected pins and set
+`min_supported_app_version` above the broken build, so the in-app blocking screen points every device
+at the rescue download. Verify this rescue path once, deliberately, in staging — not for the first time
+during an incident.
+
+## Emergency: pulling a bad app release
+
+1. Set `min_supported_app_version` above the bad version → every device shows the blocking update screen.
+2. Publish the fixed APK and update `latest.json` (version code, URL, **sha256**).
+3. Devices update on next check; the SHA-256 is verified before install, so a corrupted or swapped file
+   is rejected rather than installed.

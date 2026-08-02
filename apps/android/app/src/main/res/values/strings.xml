@@ -38,4 +38,13 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>
+    <string name="fgs_title">Payment monitoring active</string>
+    <string name="reliability_title">Reliability</string>
+    <string name="allow_background">Allow background activity</string>
+    <string name="open_autostart">Open autostart settings</string>
+    <string name="revoke_wipe">Disconnect and erase data</string>
+    <string name="update_available">A new version is available</string>
+    <string name="update_now">Update now</string>
+    <string name="update_required">This version is no longer supported</string>
+    <string name="privacy_policy">Privacy policy</string>
 </resources>

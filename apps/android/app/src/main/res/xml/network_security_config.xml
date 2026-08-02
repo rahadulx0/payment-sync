@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release posture (Task 15 §4.1): no cleartext anywhere, and NO user-added CA
+  trust — a merchant (or malware) installing a CA must not be able to read
+  payment traffic. The debug overlay permits cleartext to the emulator host only,
+  so a local dev server works without weakening the shipped build.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -6,6 +6,7 @@ import com.inovisolutions.paymentsync.BuildConfig
 import com.inovisolutions.paymentsync.data.local.AppDatabase
 import com.inovisolutions.paymentsync.data.remote.AuthInterceptor
 import com.inovisolutions.paymentsync.data.remote.DeviceApi
+import com.inovisolutions.paymentsync.data.remote.PinningConfig
 import com.inovisolutions.paymentsync.data.remote.RequestIdInterceptor
 import com.inovisolutions.paymentsync.data.secure.CredentialStore
 import com.inovisolutions.paymentsync.data.sms.ParserEngine
@@ -58,8 +59,8 @@ object DatabaseModule {
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     @Provides @Singleton
-    fun okHttp(credentials: CredentialStore): OkHttpClient =
-        OkHttpClient.Builder()
+    fun okHttp(credentials: CredentialStore): OkHttpClient {
+        val builder = OkHttpClient.Builder()
             .addInterceptor(RequestIdInterceptor())
             .addInterceptor(AuthInterceptor(credentials))
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -67,7 +68,13 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .callTimeout(60, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false) // retry policy belongs to WorkManager (Task 14)
-            .build()
+
+        // Certificate pinning: active in release/staging, off only in debug (Task 15 §4.1).
+        PinningConfig.pinnerFor(PinningConfig.hostOf(BuildConfig.API_BASE_URL), BuildConfig.DEBUG)
+            ?.let { builder.certificatePinner(it) }
+
+        return builder.build()
+    }
 
     @Provides @Singleton
     fun retrofit(client: OkHttpClient, json: Json): Retrofit =

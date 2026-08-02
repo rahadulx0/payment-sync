@@ -1,3 +1,7 @@
+// Explicit import: inside `android { }` the name `java` resolves to Gradle's
+// JavaPluginExtension, not the JDK package.
+import java.util.Base64
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,6 +14,26 @@ plugins {
 android {
     namespace = "com.inovisolutions.paymentsync"
     compileSdk = 35
+
+    /**
+     * Release signing from CI env (Task 15 §4.5). The keystore is the single
+     * highest-consequence artifact in the project: lose it and no merchant can
+     * ever install an update again. Custody + backups are in docs/runbook.md.
+     */
+    signingConfigs {
+        val storeBase64 = System.getenv("ANDROID_KEYSTORE_BASE64")
+        if (!storeBase64.isNullOrBlank()) {
+            create("release") {
+                val keystoreFile = layout.buildDirectory.file("release.keystore").get().asFile
+                keystoreFile.parentFile.mkdirs()
+                keystoreFile.writeBytes(Base64.getDecoder().decode(storeBase64))
+                storeFile = keystoreFile
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.inovisolutions.paymentsync"
@@ -29,9 +53,13 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")
         }
         release {
-            isMinifyEnabled = false // R8/shrinker configured in Task 15
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_BASE_URL", "\"https://api.paysync.example\"")
+            // Signing is supplied by CI env vars; a release build without them fails
+            // loudly rather than silently falling back to the debug key (Task 15 §4.5).
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

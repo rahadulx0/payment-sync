@@ -38,4 +38,13 @@
 
     <string name="settings_title">সেটিংস</string>
     <string name="settings_language">ভাষা</string>
+    <string name="fgs_title">পেমেন্ট মনিটরিং চালু আছে</string>
+    <string name="reliability_title">নির্ভরযোগ্যতা</string>
+    <string name="allow_background">ব্যাকগ্রাউন্ডে চলার অনুমতি দিন</string>
+    <string name="open_autostart">অটোস্টার্ট সেটিংস খুলুন</string>
+    <string name="revoke_wipe">সংযোগ বিচ্ছিন্ন করে ডেটা মুছুন</string>
+    <string name="update_available">নতুন সংস্করণ পাওয়া যাচ্ছে</string>
+    <string name="update_now">এখনই আপডেট করুন</string>
+    <string name="update_required">এই সংস্করণটি আর সমর্থিত নয়</string>
+    <string name="privacy_policy">গোপনীয়তা নীতি</string>
 </resources>

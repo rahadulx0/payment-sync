@@ -85,3 +85,41 @@ the boot gap is exactly when messages get missed.
    unsent and why.
 3. **Anything else** → Diagnostics → **Copy diagnostics for support** and send the block. It is safe to
    share by construction: no message bodies, no device token, no customer numbers.
+
+## Hardening & release channel (Task 15)
+
+### Installing the app (there is no Play Store listing)
+
+Google Play **cannot** distribute this app: `READ_SMS`/`RECEIVE_SMS` are restricted permissions granted
+essentially only to default SMS handlers (`architecture.md §17.1`). Distribution is a directly signed
+APK plus an in-app update channel.
+
+1. Open the download link supplied with your onboarding pack.
+2. Android will ask to allow installs from that browser/file manager — this is expected for a directly
+   distributed app. Allow it, then install.
+3. Updates arrive **inside the app**: it checks `latest.json`, verifies the APK's SHA-256 before
+   installing, and refuses a file whose checksum does not match. Mandatory updates cannot be dismissed.
+
+### Making the phone reliable (the part that actually matters)
+
+Diagnostics shows a plain-language **Reliability** readout with the exact fix for anything unmet:
+
+- **Allow background activity** — battery-optimisation exemption. Without it, the phone may stop the
+  app and payments will only be captured when the merchant opens it.
+- **Open autostart settings** — Xiaomi/Redmi/Poco, Oppo/Realme, vivo/iQOO, Huawei/Honor and Samsung get
+  a direct deep link; unknown ROMs fall back to the app settings page rather than crashing.
+- **Payment monitoring** (optional foreground service, off by default) — keeps the process warm on the
+  most aggressive ROMs. It does not upload anything itself; it only prevents the process being killed.
+
+### Privacy controls
+
+`docs/privacy-policy.md` ships in-app. **Disconnect and erase data** clears the credentials and all
+local messages — it shows the count of undelivered payments first and offers a Sync now, because
+wiping is irreversible.
+
+### Not yet done (needs physical hardware / people)
+
+- `docs/device-matrix.md` is **not executed** — it needs real Xiaomi / Oppo / Samsung / stock handsets.
+- Certificate pin values are placeholders until staging has its real certificate; the MITM-proxy test
+  and the pin-rotation rehearsal need a device and that certificate.
+- Bengali review by a native speaker, and the 24 h battery measurement per device class.
