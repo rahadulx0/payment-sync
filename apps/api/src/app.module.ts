@@ -19,6 +19,7 @@ import { DevicesAdminModule } from './modules/devices/admin/devices-admin.module
 import { DevicesModule } from './modules/devices/devices.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { MatchingModule } from './modules/matching/matching.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { OpsModule } from './modules/ops/ops.module.js';
 import { ParsingModule } from './modules/parsing/parsing.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
@@ -26,6 +27,7 @@ import { ProbeModule } from './modules/probe/probe.module.js';
 import { ReviewsModule } from './modules/reviews/reviews.module.js';
 import { SmsModule } from './modules/sms/sms.module.js';
 import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
+import { MaintenanceModule } from './workers/maintenance.module.js';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
     ReviewsModule,
     AnalyticsModule,
     OpsModule,
+    NotificationsModule,
+    MaintenanceModule,
     HealthModule,
     ProbeModule,
   ],

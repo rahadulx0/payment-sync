@@ -20,6 +20,8 @@ const csp = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Standalone output keeps the production image small (Task 16 Dockerfile).
+  output: 'standalone',
   // Types are checked via `pnpm typecheck`; ESLint via the repo config. Both run
   // outside the build, so the build itself just compiles.
   eslint: { ignoreDuringBuilds: true },

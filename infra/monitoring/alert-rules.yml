@@ -1,0 +1,125 @@
+# Alert rules (architecture §15.3). Every rule carries the runbook anchor that
+# resolves it — an alert without a procedure is just noise at 2am.
+#
+# Severity routing: P1/P2 → Telegram + email, P3 → email digest. P1 repeats every
+# 15 min until acknowledged.
+groups:
+  - name: paysync-p1
+    interval: 30s
+    rules:
+      - alert: ApiNotReady
+        expr: up{job="paysync-api"} == 0
+        for: 2m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'API /readyz failing for 2 minutes'
+          runbook: 'docs/runbook.md#api-down'
+
+      - alert: PostgresUnreachable
+        expr: pg_up == 0
+        for: 1m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'Postgres unreachable'
+          runbook: 'docs/runbook.md#database-down'
+
+      # Money correctness: any invariant violation is an incident, not a warning.
+      - alert: InvariantViolation
+        expr: increase(invariant_violations_total[15m]) > 0
+        for: 0m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'Correctness invariant violated ({{ $labels.check }})'
+          runbook: 'docs/runbook.md#invariant-violation-p1'
+
+      - alert: WebhookDeadLetter
+        expr: increase(webhook_dead_total[15m]) > 0
+        for: 0m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'A webhook exhausted its retry budget — a client was never told'
+          runbook: 'docs/runbook.md#dead-webhooks'
+
+      - alert: DiskAlmostFull
+        expr: (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) > 0.9
+        for: 5m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'Disk above 90%'
+          runbook: 'docs/runbook.md#disk-full'
+
+      - alert: BackupMissing
+        expr: time() - paysync_last_backup_timestamp_seconds > 93600
+        for: 0m
+        labels: { severity: P1 }
+        annotations:
+          summary: 'No successful backup in over 26 hours'
+          runbook: 'docs/runbook.md#backup-missing'
+
+  - name: paysync-p2
+    interval: 1m
+    rules:
+      # Business-hours windowing is enforced in the app (device-health job); this
+      # rule is the safety net for a fleet-wide outage.
+      - alert: ManyDevicesOffline
+        expr: devices_online == 0
+        for: 30m
+        labels: { severity: P2 }
+        annotations:
+          summary: 'No devices online — merchants are silently missing payments'
+          runbook: 'docs/device-offline-playbook.md'
+
+      - alert: WebhookSuccessRateLow
+        expr: |
+          sum(rate(webhook_attempts_total{status="DELIVERED"}[15m]))
+            / clamp_min(sum(rate(webhook_attempts_total[15m])), 0.001) < 0.9
+        for: 15m
+        labels: { severity: P2 }
+        annotations:
+          summary: 'Webhook success rate below 90%'
+          runbook: 'docs/runbook.md#webhook-failures'
+
+      - alert: QueueBacklog
+        expr: webhook_queue_depth > 500
+        for: 10m
+        labels: { severity: P2 }
+        annotations:
+          summary: 'Webhook queue backlog above 500'
+          runbook: 'docs/runbook.md#queue-backlog'
+
+      - alert: ReviewsBreachingSla
+        expr: open_reviews > 0 and time() - paysync_oldest_review_timestamp_seconds > 1800
+        for: 5m
+        labels: { severity: P2 }
+        annotations:
+          summary: 'A review has been open past its SLA — a paid order is unfulfilled'
+          runbook: 'docs/runbook.md#working-the-review-queue'
+
+  - name: paysync-p3
+    interval: 5m
+    rules:
+      - alert: ParseFailureRateHigh
+        expr: |
+          sum by (provider) (rate(sms_parse_failures_total[6h]))
+            / clamp_min(sum by (provider) (rate(sms_uploads_total[6h])), 0.001) > 0.05
+        for: 30m
+        labels: { severity: P3 }
+        annotations:
+          summary: 'Parse failure rate above 5% for {{ $labels.provider }} — the provider may have changed wording'
+          runbook: 'docs/runbook.md#parser-drift'
+
+      - alert: OpenReviewsPilingUp
+        expr: open_reviews > 10
+        for: 30m
+        labels: { severity: P3 }
+        annotations:
+          summary: 'More than 10 open reviews'
+          runbook: 'docs/runbook.md#working-the-review-queue'
+
+      - alert: MatchingConflicts
+        expr: increase(matching_conflicts_total[1h]) > 10
+        for: 0m
+        labels: { severity: P3 }
+        annotations:
+          summary: 'Matching conflicts — a concurrency path to review (money did NOT move twice)'
+          runbook: 'docs/matching.md'

@@ -1,0 +1,155 @@
+# Production stack (architecture §16.1). Single VPS, deliberately — ADR-10.
+# Only Caddy publishes ports; everything else is on the internal network.
+name: paysync
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '50m'
+    max-file: '5'
+
+x-api-common: &api-common
+  image: ghcr.io/${GHCR_OWNER:-owner}/paysync-api:${IMAGE_TAG:-latest}
+  env_file: [/opt/paysync/.env]
+  environment:
+    TZ: UTC
+    NODE_ENV: production
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  networks: [internal]
+  restart: unless-stopped
+  logging: *logging
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    environment:
+      TZ: UTC
+      API_DOMAIN: ${API_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      ADMIN_IP_ALLOWLIST: ${ADMIN_IP_ALLOWLIST:-}
+    depends_on: [api-1, api-2, admin]
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+
+  # Two API replicas so Caddy can drain one at a time during a deploy.
+  api-1:
+    <<: *api-common
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  api-2:
+    <<: *api-common
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  # Anything retried, delayed or scheduled runs here, never in an HTTP request.
+  worker:
+    <<: *api-common
+    command: ['node', 'apps/api/dist/src/workers/main.js']
+    healthcheck:
+      test: ['CMD', 'node', '-e', 'process.exit(0)']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  admin:
+    image: ghcr.io/${GHCR_OWNER:-owner}/paysync-admin:${IMAGE_TAG:-latest}
+    env_file: [/opt/paysync/.env]
+    environment:
+      TZ: UTC
+      NODE_ENV: production
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      TZ: UTC
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+    deploy:
+      resources:
+        limits: { memory: 3g }
+
+  redis:
+    image: redis:7-alpine
+    # AOF is for restart durability only — Redis is NOT a source of truth here.
+    # Losing it loses in-flight queue state, which the DB-driven sweepers recover.
+    command: ['redis-server', '--appendonly', 'yes', '--requirepass', '${REDIS_PASSWORD}']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+    deploy:
+      resources:
+        limits: { memory: 768m }
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
+
+networks:
+  internal:
+    driver: bridge

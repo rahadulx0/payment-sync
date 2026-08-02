@@ -1,0 +1,45 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+  external_labels:
+    env: production
+
+rule_files:
+  - /etc/prometheus/alert-rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # /metrics is internal-only (not published by Caddy) and token-guarded.
+  - job_name: paysync-api
+    metrics_path: /metrics
+    authorization:
+      credentials_file: /etc/prometheus/metrics_token
+    static_configs:
+      - targets: ['api-1:3000', 'api-2:3000']
+
+  - job_name: paysync-worker
+    metrics_path: /metrics
+    authorization:
+      credentials_file: /etc/prometheus/metrics_token
+    static_configs:
+      - targets: ['worker:3000']
+
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+
+  - job_name: redis
+    static_configs:
+      - targets: ['redis_exporter:9121']
+
+  - job_name: node
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  - job_name: caddy
+    static_configs:
+      - targets: ['caddy:2019']

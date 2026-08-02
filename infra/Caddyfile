@@ -1,0 +1,69 @@
+# Automatic TLS, security headers, and the load balancer that makes a rolling
+# deploy possible (architecture §16.1). Caddy is the only thing exposed.
+
+{
+	email {$ACME_EMAIL}
+	servers {
+		protocols h1 h2
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}
+
+{$API_DOMAIN} {
+	import security_headers
+	encode gzip
+
+	# A coarse per-IP limit as a first line of defence; the real, per-audience
+	# limits live in the app (Task 03) where they can be tenant-aware.
+	request_body {
+		max_size 1MB
+	}
+
+	# Health-checked upstreams: an unhealthy replica is drained automatically,
+	# which is what makes the rolling restart zero-downtime.
+	reverse_proxy api-1:3000 api-2:3000 {
+		lb_policy least_conn
+		health_uri /readyz
+		health_interval 10s
+		health_timeout 3s
+		fail_duration 30s
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/api.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
+
+{$ADMIN_DOMAIN} {
+	import security_headers
+	encode gzip
+
+	# Optional operator IP allowlist. Empty ⇒ open (still behind admin auth+TOTP).
+	@blocked not remote_ip {$ADMIN_IP_ALLOWLIST:0.0.0.0/0}
+	respond @blocked "Forbidden" 403
+
+	reverse_proxy admin:3001
+
+	log {
+		output file /var/log/caddy/admin.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
