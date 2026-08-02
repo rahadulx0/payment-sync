@@ -10,6 +10,7 @@ import com.inovisolutions.paymentsync.data.remote.RequestIdInterceptor
 import com.inovisolutions.paymentsync.data.secure.CredentialStore
 import com.inovisolutions.paymentsync.data.sms.ParserEngine
 import com.inovisolutions.paymentsync.domain.port.UploadScheduler
+import com.inovisolutions.paymentsync.work.WorkScheduler
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -35,9 +36,10 @@ object AppModule {
     @Provides @Singleton
     fun json(): Json = Json { ignoreUnknownKeys = true }
 
-    /** No-op upload port for Task 13; Task 14 binds the WorkManager scheduler. */
+    /** Task 14: the capture pipeline's upload port is now the WorkManager scheduler. */
     @Provides @Singleton
-    fun uploadScheduler(): UploadScheduler = UploadScheduler { }
+    fun uploadScheduler(scheduler: WorkScheduler): UploadScheduler =
+        UploadScheduler { scheduler.scheduleUpload() }
 }
 
 @Module

@@ -28,9 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.inovisolutions.paymentsync.R
 import com.inovisolutions.paymentsync.ui.dashboard.Dashboard
+import com.inovisolutions.paymentsync.ui.diagnostics.DiagnosticsScreen
 import com.inovisolutions.paymentsync.ui.onboarding.OnboardingViewModel
+import com.inovisolutions.paymentsync.ui.transactions.TransactionsScreen
 
 private enum class Step { WELCOME, RATIONALE, PERMISSIONS, ENROLL, DONE }
+
+/** Main-area destinations once the phone is enrolled. */
+private enum class MainScreen { DASHBOARD, TRANSACTIONS, DIAGNOSTICS }
 
 /**
  * The onboarding flow order is deliberate and must not be reordered (§17.2):
@@ -57,7 +62,34 @@ fun AppRoot(startEnrolled: Boolean) {
             error = state.error,
             onEnroll = { code, key, name, wallet -> vm.enroll(code, key, name, wallet) },
         )
-        Step.DONE -> Dashboard()
+        Step.DONE -> MainArea()
+    }
+}
+
+/** Dashboard ⇄ Transactions / Diagnostics — deliberately shallow navigation. */
+@Composable
+private fun MainArea() {
+    var screen by remember { mutableStateOf(MainScreen.DASHBOARD) }
+    when (screen) {
+        MainScreen.DASHBOARD -> Dashboard(
+            onOpenTransactions = { screen = MainScreen.TRANSACTIONS },
+            onOpenDiagnostics = { screen = MainScreen.DIAGNOSTICS },
+        )
+        MainScreen.TRANSACTIONS -> Column {
+            BackRow { screen = MainScreen.DASHBOARD }
+            TransactionsScreen()
+        }
+        MainScreen.DIAGNOSTICS -> Column {
+            BackRow { screen = MainScreen.DASHBOARD }
+            DiagnosticsScreen()
+        }
+    }
+}
+
+@Composable
+private fun BackRow(onBack: () -> Unit) {
+    Button(onClick = onBack, modifier = Modifier.padding(start = 16.dp, top = 16.dp)) {
+        Text(stringResource(R.string.back))
     }
 }
 

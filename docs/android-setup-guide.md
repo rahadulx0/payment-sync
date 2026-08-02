@@ -41,3 +41,47 @@ cd apps/android
 `./gradlew :app:testDebugUnitTest :app:assembleDebug` is green on JDK 21 + SDK 35. Instrumented tests
 (`SmsReceiver`, Room migration, enroll flow, credential store) require an emulator and run in the
 `android.yml` CI job; the real-device OEM-reliability matrix is Task 15.
+
+## Sync engine (Task 14)
+
+**The guarantee: a captured SMS always reaches the server eventually** — across airplane mode,
+force-close, reboot, and OEM battery kills.
+
+- **One queue drainer** (`UploadWorker`, unique work `upload-queue`) batches ≤50 messages oldest-first
+  (Task 08's matching depends on that ordering). Never one worker per message — that bursts requests
+  and trips the rate limit.
+- **Rows are the source of truth.** Each carries `syncStatus`, `attemptCount` and `nextAttemptAt`; the
+  worker is just a pump. The state machine is a pure function, unit-tested over the whole
+  (state × event) table.
+- `DUPLICATE` is **success**, not an error — it is how a reinstalled app re-learns its server ids.
+- `401` → the device is marked as needing re-enrollment and uploads stop; the rows stay `PENDING` and
+  lose nothing. `429` honours `Retry-After`. `5xx`/network back off exponentially; past the attempt
+  budget a row goes `FAILED` — still recoverable by Manual Sync and Reconcile, never dropped.
+
+### Manual Sync (the recovery path)
+
+`Sync now` on the Dashboard re-scans the inbox, re-queues everything not `UPLOADED`, uploads with
+`upload_source = MANUAL_SYNC` (which triggers the server-side rescan), and heals local state from
+duplicate responses. It reports a **truthful** summary — scanned / newly found / uploaded / duplicates /
+rejected / **still pending**. It never says "complete" while messages are waiting.
+
+### Background work
+
+| Work           | Interval  | Purpose                                                                        |
+| -------------- | --------- | ------------------------------------------------------------------------------ |
+| `upload-queue` | on demand | drain the queue (expedited when quota allows)                                  |
+| `heartbeat`    | 15 min    | liveness + telemetry + server directives; runs even when the queue is empty    |
+| `reconcile`    | 6 h       | automatic Manual Sync — the reason correctness doesn't depend on the broadcast |
+| `purge`        | daily     | delete `UPLOADED` rows past retention; never touches an unsent message         |
+
+`BootReceiver` re-registers all of it after a reboot or app update and runs a reconcile immediately —
+the boot gap is exactly when messages get missed.
+
+## Troubleshooting
+
+1. **"Payments aren't being captured"** → Diagnostics: check `sms permission` and
+   `battery optimisation exempt`. If the latter is `NO`, exempt the app (Task 15 adds the guided flow).
+2. **"It says messages are waiting"** → tap **Sync now**; the summary states exactly what is still
+   unsent and why.
+3. **Anything else** → Diagnostics → **Copy diagnostics for support** and send the block. It is safe to
+   share by construction: no message bodies, no device token, no customer numbers.

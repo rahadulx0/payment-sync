@@ -26,8 +26,15 @@
 
     <string name="dashboard_title">পেমেন্ট-সিঙ্ক</string>
     <string name="dashboard_pending">সিঙ্কের অপেক্ষায়</string>
+    <string name="dashboard_failed">পাঠানো যায়নি</string>
+    <string name="dashboard_uploaded">ব্যবসায় পাঠানো হয়েছে</string>
     <string name="dashboard_last">সর্বশেষ ধরা হয়েছে</string>
     <string name="dashboard_none">এখনো কোনো পেমেন্ট ধরা হয়নি</string>
+    <string name="manual_sync">এখনই সিঙ্ক করুন</string>
+    <string name="transactions_title">পেমেন্টসমূহ</string>
+    <string name="diagnostics_title">ডায়াগনস্টিকস</string>
+    <string name="copy_diagnostics">সাপোর্টের জন্য ডায়াগনস্টিকস কপি করুন</string>
+    <string name="back">পেছনে</string>
 
     <string name="settings_title">সেটিংস</string>
     <string name="settings_language">ভাষা</string>

@@ -26,8 +26,15 @@
 
     <string name="dashboard_title">payment-sync</string>
     <string name="dashboard_pending">Waiting to sync</string>
+    <string name="dashboard_failed">Failed to send</string>
+    <string name="dashboard_uploaded">Sent to your business</string>
     <string name="dashboard_last">Last captured</string>
     <string name="dashboard_none">No payments captured yet</string>
+    <string name="manual_sync">Sync now</string>
+    <string name="transactions_title">Payments</string>
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="copy_diagnostics">Copy diagnostics for support</string>
+    <string name="back">Back</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>
