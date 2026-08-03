@@ -1,0 +1,104 @@
+# Dokploy Compose stack.
+#
+# Differences from infra/docker-compose.yml (the plain-VPS version):
+#   - No Caddy. Dokploy's Traefik terminates TLS and routes by domain; you attach
+#     the domains in the Dokploy UI rather than in a Caddyfile.
+#   - No env_file. Dokploy injects environment from its UI/API.
+#   - Postgres and Redis are Dokploy *managed database services* (so you get its
+#     scheduled S3 backups), reached over the shared network by their service name.
+#   - Migrations run in the API entrypoint (Prisma's advisory lock makes that safe
+#     with two replicas) because Dokploy has no universal pre-deploy hook.
+#
+# Everything except the two web services stays off the public network.
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    # Two replicas so a rolling update always leaves a healthy upstream.
+    deploy:
+      replicas: 2
+      resources:
+        limits: { memory: 1g }
+    entrypoint: ['sh', '/app/infra/dokploy/entrypoint.sh']
+    environment:
+      ROLE: api
+      NODE_ENV: production
+      TZ: UTC
+      PORT: '3000'
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      KEY_ENCRYPTION_KEY: ${KEY_ENCRYPTION_KEY}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN}
+      ADMIN_IP_ALLOWLIST: ${ADMIN_IP_ALLOWLIST:-}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/api/v1/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks: [dokploy-network]
+
+  # Anything retried, delayed or scheduled: webhook delivery, rescans, expiry,
+  # invariants, purges. Single replica — the jobs are singleton-locked, but one
+  # worker keeps the scheduling obvious.
+  worker:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    entrypoint: ['sh', '/app/infra/dokploy/entrypoint.sh']
+    environment:
+      ROLE: worker
+      RUN_MIGRATIONS: 'false' # the api replicas own migrations
+      NODE_ENV: production
+      TZ: UTC
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      KEY_ENCRYPTION_KEY: ${KEY_ENCRYPTION_KEY}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      SMTP_URL: ${SMTP_URL:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+    restart: unless-stopped
+    networks: [dokploy-network]
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  admin:
+    build:
+      context: ../..
+      dockerfile: apps/admin/Dockerfile
+      args:
+        # NEXT_PUBLIC_* are baked in at BUILD time, not runtime. Changing the API
+        # origin means a rebuild, not a restart — a common and confusing trap.
+        NEXT_PUBLIC_API_ORIGIN: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_ENV: ${DEPLOY_ENV:-PRODUCTION}
+    environment:
+      NODE_ENV: production
+      TZ: UTC
+      PORT: '3001'
+    restart: unless-stopped
+    networks: [dokploy-network]
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+# Dokploy creates this; Traefik uses it to reach the services you expose.
+networks:
+  dokploy-network:
+    external: true
