@@ -8,5 +8,7 @@
     "declarationMap": false,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts"]
+  // The seed is compiled too: production images have no tsx, and seeding the
+  // first admin is a step you run inside the container (docs/deployment-dokploy.md).
+  "include": ["src/**/*.ts", "prisma/seed.ts"]
 }

@@ -103,13 +103,21 @@ Enable the **auto-deploy webhook** in Dokploy and add it to GitHub so `main` dep
 
 ## 4. Seed the first admin
 
-Run once, in the `api` container's terminal (Dokploy gives you one):
+Run once, in the `api` container's terminal (Dokploy gives you one). Production images have no `tsx`,
+so the compiled seed is used:
 
 ```sh
+SEED_ADMIN_EMAIL=you@yourdomain.com \
+SEED_ADMIN_PASSWORD='<a strong one-time password>' \
+SEED_DEV=false \
 node apps/api/dist/prisma/seed.js
 ```
 
-Then log in at `https://admin.yourdomain.com`, **enrol TOTP**, and store the 10 recovery codes offline.
+`SEED_DEV=false` matters: it keeps the sample company and fixture rows out of production. (The seed also
+refuses to create them when `NODE_ENV=production`, so this is belt and braces.)
+
+Then log in at `https://admin.yourdomain.com`, **enrol TOTP**, store the 10 recovery codes offline, and
+change that password.
 
 ## 5. Scheduled jobs
 
